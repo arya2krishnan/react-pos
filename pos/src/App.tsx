@@ -1,14 +1,19 @@
 import { useState } from 'react'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import { CssVarsProvider, extendTheme } from '@mui/joy/styles';
+import CssBaseline from '@mui/joy/CssBaseline';
+import POSPage from './pages/POSPage';
 
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
+const theme = extendTheme({
+  colorSchemes: {
+    dark: {
+      palette: {
+        // dark theme settings
+      },
+    },
   },
 });
 
@@ -16,28 +21,17 @@ function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={
-          <ThemeProvider theme={darkTheme}>
-            <CssBaseline />
-              <Home count={count} setCount={setCount} />
-          </ThemeProvider>
-            } />
-        <Route path="/pos" element={
-          <ThemeProvider theme={darkTheme}>
-            <CssBaseline />
-              <POS />
-          </ThemeProvider>
-          } />
-        <Route path="/dashboard" element={
-          <ThemeProvider theme={darkTheme}>
-            <CssBaseline />
-              <Dashboard />
-          </ThemeProvider>
-          } />
-      </Routes>
-    </Router>
+    <CssVarsProvider theme={theme} defaultMode="dark">
+      <CssBaseline />
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/pos" replace />} />
+          <Route path="/home" element={<Home count={count} setCount={setCount} />} />
+          <Route path="/pos" element={<POSPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
+      </Router>
+    </CssVarsProvider>
   )
 }
 
@@ -71,10 +65,6 @@ function Home({ count, setCount }: HomeProps) {
       </p>
     </>
   )
-}
-
-function POS() {
-  return <h2>POS System</h2>
 }
 
 function Dashboard() {

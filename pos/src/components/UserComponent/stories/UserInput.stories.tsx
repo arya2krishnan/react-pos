@@ -14,10 +14,12 @@ const Template: StoryFn<UserInputProps> = (args) => {
   const [orderOpen, setOrderOpen] = React.useState(false);
   const [name, setName] = React.useState('');
   const [phone, setPhone] = React.useState('');
+  const [textOptIn, setTextOptIn] = React.useState(false);
 
-  const handleClick = useCallback((name: string, phone: string) => {
+  const handleClick = useCallback((name: string, phone: string, optIn: boolean) => {
     setName(name);
     setPhone(phone);
+    setTextOptIn(optIn);
     setOrderOpen(true);
   }, []);
 
@@ -27,7 +29,7 @@ const Template: StoryFn<UserInputProps> = (args) => {
       <UserInput 
         {...args} 
         isOpen={open} 
-        onClick={handleClick} 
+        onClick={handleClick}
         onClose={() => setOpen(false)}
         name={name}
         phone={phone} />
@@ -35,7 +37,7 @@ const Template: StoryFn<UserInputProps> = (args) => {
         orderNumber={4} 
         open={orderOpen} 
         onClose={() => setOrderOpen(false)}
-        name={`Name: ${name} Phone: ${phone}`}
+        name={`Name: ${name} Phone: ${phone} Text Opt-In: ${textOptIn ? 'Yes' : 'No'}`}
         />
     </>
   );

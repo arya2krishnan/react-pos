@@ -2,7 +2,7 @@ import * as React from 'react';
 import Box from '@mui/joy/Box';
 import Drawer from '@mui/joy/Drawer';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import { Button, Stack } from '@mui/joy';
+import { Button } from '@mui/joy';
 import Receipt from './Receipt';
 import { CheckoutItemCardProps } from './CheckoutItems/CheckoutItemCard';
 
@@ -13,10 +13,12 @@ export interface CartButtonProps {
     onClick: () => void;
     onRemove: (index: number) => void;
     onDestroy: () => void;
+    onQuantityChange?: (index: number, newQuantity: number) => void;
 }
 
 export default function CartButton(props: CartButtonProps) {
   const [open, setOpen] = React.useState(false);
+  const itemCount = props.items.length;
 
   const toggleDrawer =
     (inOpen: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
@@ -31,39 +33,48 @@ export default function CartButton(props: CartButtonProps) {
       setOpen(inOpen);
     };
 
-    console.log(props.items);
-
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Button variant="soft" color="neutral" size='lg' onClick={() => setOpen(true)} startDecorator={<ShoppingCartIcon />}>
-        {props.items.length > 0 ? props.items.length : 'Cart'}
-      </Button>
+    <Box>
+      <Box sx={{ position: 'fixed', top: 16, right: 16, zIndex: 1100 }}>
+        <Button 
+          variant="soft" 
+          color="neutral" 
+          size='lg' 
+          onClick={() => setOpen(true)} 
+          startDecorator={<ShoppingCartIcon />}
+        >
+          {itemCount > 0 ? `Cart (${itemCount})` : 'Cart'}
+        </Button>
+      </Box>
+      
       <Drawer 
-        anchor="left"
-        color="primary"
+        anchor="right"
         size="md"
-        variant="solid"
-        open={open} 
+        variant="plain"
+        open={open}
         onClose={toggleDrawer(false)}
-        >
-        <Stack alignItems="center">
-        <Box
-          role="presentation"
-        >
-            <Receipt 
-            shopUrl={props.shopUrl} 
-            shopName={props.shopName} 
-            items={props.items} 
-            onClick={ () => {
-                props.onClick();
-                setOpen(false);
-                }
+        slotProps={{
+          content: {
+            sx: {
+              bgcolor: 'background.body',
+              p: 0,
+              width: { xs: '100%', sm: 400 },
             }
-            onRemove={props.onRemove}
-            onDestroy={props.onDestroy}
-              />
-        </Box>
-        </Stack>
+          }
+        }}
+      >
+        <Receipt 
+          shopUrl={props.shopUrl} 
+          shopName={props.shopName} 
+          items={props.items} 
+          onClick={() => {
+            props.onClick();
+            setOpen(false);
+          }}
+          onRemove={props.onRemove}
+          onDestroy={props.onDestroy}
+          onQuantityChange={props.onQuantityChange}
+        />
       </Drawer>
     </Box>
   );

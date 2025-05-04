@@ -1,0 +1,16 @@
+# Compiled JavaScript files
+lib/**/*.js
+lib/**/*.js.map
+
+# TypeScript v1 declaration files
+typings/
+
+# Node.js dependency directory
+node_modules/
+*.local
+
+# Firebase service account keys - contains sensitive information
+**/serviceAccountKey.json
+src/serviceAccountKey.json
+lib/src/serviceAccountKey.json
+serviceAccountKey.json

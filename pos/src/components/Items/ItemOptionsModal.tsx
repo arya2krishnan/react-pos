@@ -13,10 +13,32 @@ export interface ItemOptionsModalProps {
     options: ItemOptionsProps[];
     isOpen: boolean;
     onClose: () => void;
+    onSubmit?: (selectedValues: Record<string, string[]>, quantity: number) => void;
 };
 
 export default function ItemOptionsModal(props: ItemOptionsModalProps) {
   const [selectedValues, setSelectedValues] = React.useState<{ [key: string]: string[] }>({});
+  const [total, setTotal] = React.useState(1);
+
+  // Initialize default selected values when modal opens
+  React.useEffect(() => {
+    if (props.isOpen && props.options.length > 0) {
+      const initialValues: Record<string, string[]> = {};
+      
+      // Set default selections (first option for each category)
+      props.options.forEach(option => {
+        if (option.options.length > 0) {
+          if (option.isMultiple) {
+            initialValues[option.option] = [];
+          } else {
+            initialValues[option.option] = [option.options[0]];
+          }
+        }
+      });
+      
+      setSelectedValues(initialValues);
+    }
+  }, [props.isOpen, props.options]);
 
   const handleOptionChange = (option: string, value: string[]) => {
     setSelectedValues((prevValues) => ({
@@ -26,13 +48,15 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
   };
 
   const onSubmit = () => {
-    Object.entries(selectedValues).forEach(([option, value]) => {
-      alert(`Selected ${option}: ${value.join(', ')}`);
-    });
-    alert(`Total Quantity: ${total}`);
+    if (total <= 0) {
+      alert("Please select at least 1 item");
+      return;
+    }
+    
+    if (props.onSubmit) {
+      props.onSubmit(selectedValues, total);
+    }
   };
-
-  const [total, setTotal] = React.useState(1);
 
   return (
     <Modal open={props.isOpen} onClose={() => {
@@ -90,7 +114,7 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
         </Typography>
         <ButtonGroup aria-label="outlined primary button group">
             <IconButton onClick={() => {
-                if (total > 0) {
+                if (total > 1) {
                     setTotal(total - 1);
                 }
             }}>
