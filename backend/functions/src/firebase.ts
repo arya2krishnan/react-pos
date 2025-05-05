@@ -1,17 +1,29 @@
 import * as admin from 'firebase-admin';
-import * as path from 'path';
 
-// Use path.join to create a proper path that works after compilation
-const serviceAccount = require(path.join(__dirname, 'serviceAccountKey.json'));
+// Initialize without service account for production deployment
+// The application will use the default credentials provided by the runtime
+admin.initializeApp();
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-    databaseURL: 'https://cafe-pos-gough.firebaseio.com',
-    storageBucket: 'cafe-pos-gough.appspot.com'
+// Configure Firestore to ignore undefined values
+const db = admin.firestore();
+db.settings({
+    ignoreUndefinedProperties: true
 });
 
-const db = admin.firestore();
 const storage = admin.storage();
-const bucket = storage.bucket();
 
-export { admin, db, storage, bucket }; 
+// Use the exact bucket URL provided by the user with gs:// protocol
+const customBucketName = 'cafe-pos-gough.firebasestorage.app';
+// The bucket name needs to match the user's format: gs://cafe-pos-gough.firebasestorage.app
+const bucket = storage.bucket(customBucketName);
+
+// Also create alternate bucket references to try if the first one fails
+const alternativeBuckets = {
+    withGsProtocol: storage.bucket(`gs://${customBucketName}`),
+    appspotFormat: storage.bucket('cafe-pos-gough.appspot.com')
+};
+
+console.log('Using Firebase Storage bucket:', customBucketName);
+console.log('Alternative bucket formats available if needed');
+
+export { admin, db, storage, bucket, alternativeBuckets }; 

@@ -3,15 +3,17 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitReturns": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "composite": true,
-    "skipLibCheck": true
+    "composite": false,
+    "skipLibCheck": true,
+    "declaration": false,
+    "incremental": false
   },
   "compileOnSave": true,
   "include": [

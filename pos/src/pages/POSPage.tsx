@@ -1,13 +1,12 @@
 import { Container, Typography, Alert, CircularProgress, Box } from '@mui/joy';
-import { itemsData } from '../data/items';
 import ItemGrid from '../components/Items/ItemGrid';
 import CartButton from '../components/receipt/CartButton';
 import { useCartStore } from '../store/cartStore';
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import UserInput from '../components/UserComponent/UserInput';
 import OrderNumber from '../components/UserComponent/OrderNumber';
 import DonationPrompt from '../components/UserComponent/DonationPrompt';
-import { apiService, OrderData } from '../services/api';
+import { apiService, OrderData, ItemData } from '../services/api';
 
 export default function POSPage() {
   const cartItems = useCartStore((state) => state.items);
@@ -15,6 +14,11 @@ export default function POSPage() {
   const clearCart = useCartStore((state) => state.clearCart);
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
+
+  // State for items
+  const [items, setItems] = useState<ItemData[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
+  const [itemsError, setItemsError] = useState('');
 
   // State for user input modal
   const [isUserInputOpen, setIsUserInputOpen] = useState(false);
@@ -32,6 +36,32 @@ export default function POSPage() {
   // State for loading and errors
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Extract fetchItems as a callback to reuse it
+  const fetchItems = useCallback(async () => {
+    setItemsLoading(true);
+    setItemsError('');
+    
+    try {
+      const response = await apiService.getItems();
+      
+      if (response.success && response.data) {
+        setItems(response.data);
+      } else {
+        setItemsError(response.error || 'Failed to fetch items');
+      }
+    } catch (error) {
+      console.error('Error fetching items:', error);
+      setItemsError('An unexpected error occurred while fetching items');
+    } finally {
+      setItemsLoading(false);
+    }
+  }, []);
+
+  // Fetch items from the API when the component mounts
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleOpenUserInput = () => {
     setIsUserInputOpen(true);
@@ -120,6 +150,9 @@ export default function POSPage() {
         
         // Clear the cart
         clearCart();
+        
+        // Refetch items to get the latest inventory
+        await fetchItems();
       } else {
         setErrorMessage(response.error || 'Failed to place order');
       }
@@ -132,8 +165,8 @@ export default function POSPage() {
   };
 
   const checkoutItems = cartItems.map((cartItem, index) => ({
-    url: cartItem.item.imageUrl,
-    title: cartItem.item.title,
+    url: cartItem.item.imageUrl || '',
+    title: cartItem.item.title || cartItem.item.name || 'No Name',
     options: Object.entries(cartItem.selectedOptions).flatMap(([optionName, values]) => 
       values.map(value => `${optionName}: ${value}`)
     ),
@@ -167,7 +200,19 @@ export default function POSPage() {
         Point of Sale
       </Typography>
       
-      <ItemGrid items={itemsData} />
+      {itemsError && (
+        <Alert color="danger" sx={{ mb: 2 }}>
+          {itemsError}
+        </Alert>
+      )}
+      
+      {itemsLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <ItemGrid items={items} />
+      )}
       
       <CartButton 
         shopName="My Shop"

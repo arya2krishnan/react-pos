@@ -1,9 +1,15 @@
 import { Box } from '@mui/joy';
 import { useState } from 'react';
-import { ItemData } from '../../data/items';
+import { ItemData } from '../../services/api';
 import ItemCard from './ItemCard';
 import ItemOptionsModal from './ItemOptionsModal';
 import { useCartStore } from '../../store/cartStore';
+
+interface ItemOption {
+  name: string;
+  values: string[];
+  isMultiple: boolean;
+}
 
 interface ItemGridProps {
   items: ItemData[];
@@ -46,9 +52,9 @@ export default function ItemGrid({ items }: ItemGridProps) {
         {items.map((item) => (
           <Box key={item.id}>
             <ItemCard
-              url={item.imageUrl}
-              title={item.title}
-              description={item.description}
+              url={item.imageUrl || ''}
+              title={item.title || item.name}
+              description={item.description || ''}
               onClick={() => handleItemClick(item)}
             />
           </Box>
@@ -57,13 +63,16 @@ export default function ItemGrid({ items }: ItemGridProps) {
 
       {selectedItem && (
         <ItemOptionsModal
-          item={selectedItem.title}
-          options={selectedItem.options.map((option) => ({
-            option: option.name,
-            options: option.values,
-            isMultiple: option.isMultiple,
-            onChange: () => {},
-          }))}
+          item={selectedItem.title || selectedItem.name}
+          options={Array.isArray(selectedItem.options) 
+            ? selectedItem.options.map((option: ItemOption) => ({
+                option: option.name,
+                options: option.values,
+                isMultiple: option.isMultiple,
+                onChange: () => {},
+              }))
+            : []
+          }
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onSubmit={(selectedValues: Record<string, string[]>, quantity: number) => {

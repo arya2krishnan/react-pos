@@ -1,5 +1,4 @@
 import { Modal, ModalDialog, DialogTitle, DialogContent, Button, Stack, Box, Typography } from "@mui/joy";
-import React from "react";
 
 export interface DonationPromptProps {
   isOpen: boolean;
