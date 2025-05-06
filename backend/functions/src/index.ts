@@ -21,6 +21,10 @@ import { bucket, alternativeBuckets } from './firebase';
 import * as admin from 'firebase-admin';
 import { storage } from './firebase';
 
+// Import the secret definition to ensure it's properly referenced
+import { defineSecret } from 'firebase-functions/params';
+const textbeltApiKey = defineSecret('TEXTBELT_API_KEY');
+
 // Add proper interface to diagnose storage
 interface DiagnosticResults {
   bucketName: string;
@@ -86,17 +90,29 @@ const upload = multer({
 app.post('/new-order', async (req, res) => {
     const { orderNumber, customerName, customerPhone, items, totalAmount, donation, orderDate, textOptIn } = req.body;
 
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        res.status(400).json({ error: 'Order must contain at least one item' });
+        return;
+    }
+
+    // Ensure we have at least a name or phone
+    if ((!customerName || customerName.trim() === '') && (!customerPhone || customerPhone.trim() === '')) {
+        res.status(400).json({ error: 'Either customer name or phone number is required' });
+        return;
+    }
+
     try {
         const orderRef = db.collection('orders').doc();
         await orderRef.set({
             orderNumber,
-            customerName,
-            customerPhone,
+            customerName: customerName || '',
+            customerPhone: customerPhone || '',
+            textOptIn,
             items,
             totalAmount,
             donation,
             orderDate,
-            textOptIn,
             finished: false,
         });
 
@@ -110,7 +126,10 @@ app.post('/new-order', async (req, res) => {
 app.get('/unfinished-orders', async (req, res) => {
     try {
         const orders = await db.collection('orders').where('finished', '==', false).get();
-        const ordersData = orders.docs.map((doc) => doc.data());
+        const ordersData = orders.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+        }));
         res.status(200).json(ordersData);
     } catch (error) {
         console.error('Error fetching unfinished orders:', error);
@@ -120,23 +139,57 @@ app.get('/unfinished-orders', async (req, res) => {
 
 app.post('/finish-order', async (req, res) => {
     const { orderId } = req.body;
+    console.log('Finish order request received for order ID:', orderId);
 
     try {
         await db.collection('orders').doc(orderId).update({ finished: true });
         const order = await db.collection('orders').doc(orderId).get();
-        const phoneNumber = order.get('phoneNumber');
+        
+        if (!order.exists) {
+            console.error('Order not found in database:', orderId);
+            res.status(404).json({ error: 'Order not found' });
+            return;
+        }
+        
+        // Log the entire order data for debugging
+        console.log('Order data retrieved from database:', order.data());
+        
+        const customerPhone = order.get('customerPhone');
+        const customerName = order.get('customerName');
         const orderNumber = order.get('orderNumber');
         const sendMessage = order.get('textOptIn');
-        if (sendMessage) {
-            await sendText(phoneNumber, `Your order ${orderNumber} is ready!`);
+        
+        console.log('Text message params:', { 
+            customerPhone, 
+            customerName, 
+            orderNumber, 
+            textOptIn: sendMessage 
+        });
+        
+        if (sendMessage && customerPhone) {
+            try {
+                console.log('Attempting to send text message to:', customerPhone);
+                await sendText(customerPhone, `CAFE GOUGH: \nHello ${customerName}! Your order ${orderNumber} is ready!\nHead to the counter to pick it up!`);
+                console.log('Text message sent successfully');
+                res.status(200).json({ message: 'Order finished successfully' });
+            } catch (textError) {
+                console.error('Error sending text message:', textError);
+                res.status(200).json({ message: 'Order finished but failed to send text message', textError: true });
+            }
         } else {
-            res.status(404).json({ error: 'Text opt-in not found, yell out the order name instead!' });
+            console.log('Skipping text message - textOptIn:', sendMessage, 'customerPhone:', customerPhone ? 'present' : 'missing');
+            res.status(200).json({ message: 'Order finished successfully', textOptIn: false });
         }
-        res.status(200).json({ message: 'Order finished successfully' });
     } catch (error) {
         console.error('Error finishing order:', error);
         res.status(500).json({ error: 'Failed to finish order' });
     }
+});
+
+app.post('/delete-order', async (req, res) => {
+    const { orderId } = req.body;
+    await db.collection('orders').doc(orderId).delete();
+    res.status(200).json({ message: 'Order deleted successfully' });
 });
 
 app.get('/items', async (req, res) => {
@@ -222,6 +275,18 @@ app.post('/create-item', async (req, res) => {
         console.error('Error creating item:', error);
         res.status(500).json({ error: 'Failed to create item: ' + (error instanceof Error ? error.message : String(error)) });
     }
+});
+
+app.post('/open-shop', async (req, res) => {
+    const { isOpen } = req.body;
+    await db.collection('shop').doc('open').set({ isOpen });
+    res.status(200).json({ message: 'Shop status updated successfully' });
+});
+
+app.get('/shop-status', async (req, res) => {
+    const shopDoc = await db.collection('shop').doc('open').get();
+    const isOpen = shopDoc.get('isOpen');
+    res.status(200).json({ isOpen });
 });
 
 // Add a more basic file upload endpoint with simpler configuration
@@ -946,4 +1011,7 @@ app.get('/test-all-buckets', (req, res) => {
     })();
 });
 
-export const api = onRequest(app);
+export const api = onRequest({
+  secrets: [textbeltApiKey],  // Explicitly include the secret dependency here
+  maxInstances: 10,
+}, app);

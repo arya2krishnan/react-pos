@@ -7,6 +7,8 @@ import UserInput from '../components/UserComponent/UserInput';
 import OrderNumber from '../components/UserComponent/OrderNumber';
 import DonationPrompt from '../components/UserComponent/DonationPrompt';
 import { apiService, OrderData, ItemData } from '../services/api';
+import StoreStatusIndicator from '../components/common/StoreStatusIndicator';
+import NavigationBar from '../components/common/NavigationBar';
 
 export default function POSPage() {
   const cartItems = useCartStore((state) => state.items);
@@ -36,6 +38,18 @@ export default function POSPage() {
   // State for loading and errors
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Create checkout items for the cart
+  const checkoutItems = cartItems.map((cartItem, index) => ({
+    url: cartItem.item.imageUrl || '',
+    title: cartItem.item.title || cartItem.item.name || 'No Name',
+    options: Object.entries(cartItem.selectedOptions).flatMap(([optionName, values]) => 
+      values.map(value => `${optionName}: ${value}`)
+    ),
+    quantity: cartItem.quantity,
+    price: cartItem.item.price,
+    onRemove: () => removeItem(index),
+  }));
 
   // Extract fetchItems as a callback to reuse it
   const fetchItems = useCallback(async () => {
@@ -71,55 +85,113 @@ export default function POSPage() {
     setIsUserInputOpen(false);
   };
 
-  const handleOpenDonationPrompt = () => {
-    setIsDonationPromptOpen(true);
-  };
-
   const handleCloseDonationPrompt = () => {
     setIsDonationPromptOpen(false);
   };
 
   const handleCloseOrderNumber = () => {
     setIsOrderNumberOpen(false);
+    // Clear user information when the order number snackbar closes
+    setUserName('');
+    setUserPhone('');
+    setTextOptIn(false);
   };
 
   const handleQuantityChange = (index: number, newQuantity: number) => {
     updateQuantity(index, newQuantity);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cartItems.length === 0) {
       alert("Your cart is empty. Please add items to checkout.");
       return;
     }
     
-    // Open user input modal
-    handleOpenUserInput();
+    // Check if the store is open before proceeding
+    try {
+      setIsLoading(true);
+      const shopStatusResponse = await apiService.getShopStatus();
+      
+      if (!shopStatusResponse.success || !shopStatusResponse.data) {
+        setErrorMessage("Unable to verify shop status. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+      
+      const isShopOpen = shopStatusResponse.data.isOpen;
+      
+      if (!isShopOpen) {
+        alert("Sorry, the store is currently closed. Please come back later.");
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(false);
+      // If the store is open, proceed with checkout
+      handleOpenUserInput();
+    } catch (error) {
+      console.error("Error checking shop status:", error);
+      setErrorMessage("Unable to verify shop status. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   const handleUserSubmit = async (name: string, phone: string, optIn: boolean) => {
+    // Validate that we have at least a name or phone number
+    if (!name.trim() && !phone.trim()) {
+      alert('Please provide either a name or phone number to continue.');
+      return;
+    }
+    
+    console.log('User submitted information:', { name, phone, optIn });
+    
+    // Update state first
     setUserName(name);
     setUserPhone(phone);
     setTextOptIn(optIn);
     
-    // After user input, show the donation prompt
-    handleCloseDonationPrompt();
-    handleOpenDonationPrompt();
+    // Use a timeout to ensure state has updated before processing
+    setTimeout(() => {
+      // Process the order with direct values rather than state
+      processOrder(name, phone, optIn);
+    }, 100);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDonationResponse = async (donated: boolean) => {
     // Close the donation prompt
     handleCloseDonationPrompt();
     
     // Now proceed with order processing
-    await processOrder(donated);
+    await processOrder(userName, userPhone, textOptIn);
   };
 
-  const processOrder = async (donated: boolean) => {
+  const processOrder = async (customerName = userName, customerPhone = userPhone, textOptInValue = textOptIn) => {
     setIsLoading(true);
     setErrorMessage('');
     
     try {
+      console.log('Processing order with user information:', { 
+        userName: customerName, 
+        userPhone: customerPhone, 
+        textOptIn: textOptInValue 
+      });
+      
+      // Validate customer information again as a safeguard
+      if (!customerName.trim() && !customerPhone.trim()) {
+        setErrorMessage('Customer name or phone number is required.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if the store is still open
+      const shopStatusResponse = await apiService.getShopStatus();
+      if (!shopStatusResponse.success || !shopStatusResponse.data || !shopStatusResponse.data.isOpen) {
+        alert("Sorry, the store has closed. Your order cannot be processed at this time.");
+        setIsLoading(false);
+        return;
+      }
+      
       // Generate a random order number between 100 and 999
       const generatedOrderNumber = Math.floor(Math.random() * 900) + 100;
       setOrderNumber(generatedOrderNumber);
@@ -129,32 +201,45 @@ export default function POSPage() {
       // Create order data for API
       const orderData: OrderData = {
         orderNumber: generatedOrderNumber,
-        customerName: userName,
-        customerPhone: userPhone,
-        textOptIn: textOptIn,
+        customerName: customerName,
+        customerPhone: customerPhone,
+        textOptIn: textOptInValue,
         items: cartItems,
         totalAmount: totalAmount,
         orderDate: new Date().toISOString(),
         donation: {
-          donated: donated,
-          amount: donated ? totalAmount : undefined
+          donated: false,  // Always set to false for now
+          amount: 0  // Always set to 0 for now
         }
       };
+      
+      console.log('Submitting order to API with data:', orderData);
       
       // Submit order to API
       const response = await apiService.submitOrder(orderData);
       
       if (response.success) {
-        // Show the order number
+        // First show the order number - this needs the name to be available
         setIsOrderNumberOpen(true);
+        
+        // Then refetch items to get the latest inventory
+        await fetchItems();
         
         // Clear the cart
         clearCart();
         
-        // Refetch items to get the latest inventory
-        await fetchItems();
+        // Note: User information will be cleared when the order number snackbar is closed
       } else {
+        // Show the specific error message from the API
         setErrorMessage(response.error || 'Failed to place order');
+        
+        // If it's a validation error related to customer info, reopen the user input dialog
+        if (response.error && (
+            response.error.includes('customer name') || 
+            response.error.includes('phone number')
+        )) {
+          setIsUserInputOpen(true);
+        }
       }
     } catch (error) {
       console.error('Error submitting order:', error);
@@ -164,90 +249,100 @@ export default function POSPage() {
     }
   };
 
-  const checkoutItems = cartItems.map((cartItem, index) => ({
-    url: cartItem.item.imageUrl || '',
-    title: cartItem.item.title || cartItem.item.name || 'No Name',
-    options: Object.entries(cartItem.selectedOptions).flatMap(([optionName, values]) => 
-      values.map(value => `${optionName}: ${value}`)
-    ),
-    quantity: cartItem.quantity,
-    price: cartItem.item.price,
-    onRemove: () => removeItem(index),
-  }));
-
   return (
-    <Container maxWidth="xl" sx={{ p: 2, pt: 10, pb: 4 }}>
-      {errorMessage && (
-        <Alert color="danger" sx={{ mb: 2 }}>
-          {errorMessage}
-        </Alert>
-      )}
+    <>
+      {/* Navigation bar */}
+      <NavigationBar />
       
-      {isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-          <CircularProgress />
-        </Box>
-      )}
-      
-      <Typography level="h1" sx={{ 
-        mb: 3, 
-        textAlign: 'center',
-        bgcolor: 'primary.main',
-        color: 'white',
-        py: 2,
-        borderRadius: 'sm'
+      {/* Main content */}
+      <Box sx={{ 
+        pt: '64px', // Space for the navbar
+        pb: 4, 
+        px: 2, 
+        minHeight: 'calc(100vh - 64px)',
+        bgcolor: 'background.body'
       }}>
-        Point of Sale
-      </Typography>
-      
-      {itemsError && (
-        <Alert color="danger" sx={{ mb: 2 }}>
-          {itemsError}
-        </Alert>
-      )}
-      
-      {itemsLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <ItemGrid items={items} />
-      )}
-      
-      <CartButton 
-        shopName="My Shop"
-        shopUrl="https://cdn-icons-png.flaticon.com/512/1356/1356594.png"
-        items={checkoutItems}
-        onClick={handleCheckout}
-        onRemove={removeItem}
-        onDestroy={clearCart}
-        onQuantityChange={handleQuantityChange}
-      />
-      
-      {/* User Input Modal */}
-      <UserInput 
-        isOpen={isUserInputOpen} 
-        name={userName}
-        phone={userPhone}
-        onClick={handleUserSubmit}
-        onClose={handleCloseUserInput}
-      />
-      
-      {/* Donation Prompt */}
-      <DonationPrompt 
-        isOpen={isDonationPromptOpen}
-        amount={getTotalPrice()}
-        onClose={handleCloseDonationPrompt}
-        onDonate={handleDonationResponse}
-      />
-      
-      {/* Order Number Display */}
-      <OrderNumber 
-        open={isOrderNumberOpen}
-        onClose={handleCloseOrderNumber}
-        name={userName}
-        orderNumber={orderNumber}
-      />
-    </Container>
+        <Container maxWidth="lg">
+          {/* Status and title row */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mt: 2,
+            mb: 3
+          }}>
+            <Typography level="h3">
+              Point of Sale
+            </Typography>
+            <StoreStatusIndicator position="navbar" />
+          </Box>
+
+          {itemsError && (
+            <Alert color="danger" sx={{ mb: 2 }}>
+              {itemsError}
+            </Alert>
+          )}
+
+          {errorMessage && (
+            <Alert color="danger" sx={{ mb: 2 }}>
+              {errorMessage}
+            </Alert>
+          )}
+
+          {isLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {/* Item grid */}
+          {itemsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <ItemGrid items={items} />
+          )}
+
+          {/* Modified CartButton positioning */}
+          <Box sx={{ position: 'relative', height: 0, zIndex: 1050 }}>
+            <Box sx={{ position: 'fixed', top: 74, right: 16 }}>
+              <CartButton 
+                shopName="Cafe Gough"
+                shopUrl="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGough-removebg-preview.png?alt=media&token=4f2d37f4-8d88-41aa-8822-42aef0f2bbfb"
+                items={checkoutItems}
+                onClick={handleCheckout}
+                onRemove={removeItem}
+                onDestroy={clearCart}
+                onQuantityChange={handleQuantityChange}
+              />
+            </Box>
+          </Box>
+
+          {/* Modals and popups */}
+          <UserInput
+            isOpen={isUserInputOpen}
+            name={userName}
+            phone={userPhone}
+            onClick={handleUserSubmit}
+            onClose={handleCloseUserInput}
+          />
+
+          <DonationPrompt 
+            isOpen={isDonationPromptOpen}
+            amount={getTotalPrice()}
+            onClose={handleCloseDonationPrompt}
+            onDonate={handleDonationResponse}
+          />
+
+          <OrderNumber
+            open={isOrderNumberOpen}
+            onClose={handleCloseOrderNumber}
+            name={userName}
+            orderNumber={orderNumber}
+          />
+        </Container>
+      </Box>
+    </>
   );
 } 

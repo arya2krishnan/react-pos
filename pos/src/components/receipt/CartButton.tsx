@@ -35,17 +35,15 @@ export default function CartButton(props: CartButtonProps) {
 
   return (
     <Box>
-      <Box sx={{ position: 'fixed', top: 16, right: 16, zIndex: 1100 }}>
-        <Button 
-          variant="soft" 
-          color="neutral" 
-          size='lg' 
-          onClick={() => setOpen(true)} 
-          startDecorator={<ShoppingCartIcon />}
-        >
-          {itemCount > 0 ? `Cart (${itemCount})` : 'Cart'}
-        </Button>
-      </Box>
+      <Button 
+        variant="soft" 
+        color="neutral" 
+        size='lg' 
+        onClick={() => setOpen(true)} 
+        startDecorator={<ShoppingCartIcon />}
+      >
+        {itemCount > 0 ? `Cart (${itemCount})` : 'Cart'}
+      </Button>
       
       <Drawer 
         anchor="right"

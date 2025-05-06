@@ -33,12 +33,10 @@ export default function DonationPrompt(props: DonationPromptProps) {
                 mb: 2
               }}
             >
-              {/* Placeholder for Venmo QR code */}
-              <Typography sx={{ textAlign: 'center' }}>
-                Venmo QR Code Placeholder
-                <br />
-                Scan to donate
-              </Typography>
+              <img src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FIMG_1596.jpg?alt=media&token=f018a9cd-e83c-4bfe-9ab0-9103f8efea99"
+                alt="Donation QR Code"
+                style={{ maxWidth: '100%', maxHeight: '100%' }}
+              />
             </Box>
             
             <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'center' }}>

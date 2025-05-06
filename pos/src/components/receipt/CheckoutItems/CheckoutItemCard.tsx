@@ -58,7 +58,8 @@ export default function CheckoutItemCard(props: CheckoutItemCardProps) {
                     <AddIcon />
                 </IconButton>
             </ButtonGroup>
-            <Typography level="body-sm" fontWeight="bold">${totalPrice}</Typography>
+            {/* Price display hidden by request */}
+            {/* <Typography level="body-sm" fontWeight="bold">${totalPrice}</Typography> */}
           </Stack>
         </Stack>
         <IconButton size='sm' color="danger" variant="soft" onClick={props.onRemove}>

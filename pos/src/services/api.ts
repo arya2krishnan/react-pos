@@ -31,9 +31,103 @@ export interface ApiResponse<T = Record<string, unknown>> {
   error?: string;
 }
 
+export interface ShopStatusResponse {
+  isOpen: boolean;
+}
+
 const API_BASE_URL = 'https://api-2ya6yhttpq-uc.a.run.app';
 
 export const apiService = {
+  /**
+   * Get the current shop status (open or closed)
+   */
+  getShopStatus: async (): Promise<ApiResponse<ShopStatusResponse>> => {
+    try {
+      console.log('Fetching shop status from API');
+      const response = await fetch(`${API_BASE_URL}/shop-status`);
+      console.log('Shop status response:', response);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to fetch shop status: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Shop status raw data:', data);
+      
+      // Ensure we have a boolean value for isOpen
+      const isOpen = !!data.isOpen;
+      console.log('Shop is currently:', isOpen ? 'OPEN' : 'CLOSED');
+      
+      return {
+        success: true,
+        data: {
+          isOpen
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch shop status'
+      };
+    }
+  },
+  
+  /**
+   * Toggle the shop's open/closed status
+   */
+  toggleShopStatus: async (isOpen: boolean): Promise<ApiResponse<ShopStatusResponse>> => {
+    try {
+      console.log(`Setting shop status to: ${isOpen ? 'open' : 'closed'}`);
+      const response = await fetch(`${API_BASE_URL}/open-shop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isOpen }),
+      });
+      console.log('Toggle shop status response:', response);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to toggle shop status: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Toggle shop status raw data:', data);
+      
+      // Ensure we have a boolean value for isOpen
+      const newStatus = !!data.isOpen;
+      console.log('Shop is now:', newStatus ? 'OPEN' : 'CLOSED');
+      
+      return {
+        success: true,
+        data: {
+          isOpen: newStatus
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to toggle shop status'
+      };
+    }
+  },
+
   /**
    * Get all items from the backend
    */
@@ -96,34 +190,34 @@ export const apiService = {
    */
   submitOrder: async (orderData: OrderData): Promise<ApiResponse<OrderData>> => {
     try {
+      console.log('Submitting order to API:', orderData.orderNumber);
       // In a production app, you would use the actual API
-      // const response = await fetch(`${API_BASE_URL}/orders.json`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(orderData),
-      // });
-      // const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/new-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
       
-      // For demonstration, we'll simulate a successful API call
-      console.log('Order submitted to API:', orderData);
-      
-      // Simulate server processing time
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const data = await response.json();
+      console.log('Order submitted to API response:', data);
+
+      if (!response.ok) {
+        const errorMsg = data.error || 'Failed to submit order';
+        console.error('Error from server:', errorMsg);
+        throw new Error(errorMsg);
+      }
       
       return {
         success: true,
-        data: {
-          ...orderData,
-          id: Math.floor(Math.random() * 1000), // Simulate server-generated ID
-        }
+        data: data,
       };
     } catch (error) {
       console.error('API error:', error);
       return {
         success: false,
-        error: 'Failed to submit order. Please try again.'
+        error: error instanceof Error ? error.message : 'Failed to submit order. Please try again.'
       };
     }
   },
@@ -147,6 +241,129 @@ export const apiService = {
       return {
         success: false,
         error: 'Failed to fetch orders. Please try again.'
+      };
+    }
+  },
+
+  /**
+   * Get unfinished orders from the backend
+   */
+  getUnfinishedOrders: async (): Promise<ApiResponse<OrderData[]>> => {
+    try {
+      console.log('Fetching unfinished orders from API');
+      const response = await fetch(`${API_BASE_URL}/unfinished-orders`);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to fetch unfinished orders: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Unfinished orders retrieved from API:', data);
+      
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch unfinished orders'
+      };
+    }
+  },
+  
+  /**
+   * Mark an order as finished
+   */
+  finishOrder: async (orderId: string): Promise<ApiResponse<{ message: string, textOptIn?: boolean, textError?: boolean }>> => {
+    try {
+      console.log('Marking order as finished:', orderId);
+      const response = await fetch(`${API_BASE_URL}/finish-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to finish order: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Finish order response:', data);
+      
+      return {
+        success: true,
+        data: {
+          message: data.message,
+          textOptIn: data.textOptIn,
+          textError: data.textError
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to finish order'
+      };
+    }
+  },
+
+  /**
+   * Delete an order
+   */
+  deleteOrder: async (orderId: string): Promise<ApiResponse<{ message: string }>> => {
+    try {
+      console.log('Deleting order:', orderId);
+      const response = await fetch(`${API_BASE_URL}/delete-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to delete order: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Delete order response:', data);
+      
+      return {
+        success: true,
+        data: {
+          message: data.message
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete order'
       };
     }
   },

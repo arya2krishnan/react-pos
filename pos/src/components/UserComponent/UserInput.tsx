@@ -1,6 +1,6 @@
 import { ModalDialog } from "@mui/joy";
 import { Modal, DialogTitle, DialogContent, Stack, FormControl, FormLabel, Input, Button, FormHelperText, Checkbox } from "@mui/joy";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export interface UserInputProps {
     isOpen: boolean;
@@ -11,8 +11,20 @@ export interface UserInputProps {
 }
 
 export default function UserInput(props: UserInputProps) {
+    const [name, setName] = useState(props.name || '');
+    const [phone, setPhone] = useState(props.phone || '');
     const [phoneError, setPhoneError] = useState<string | null>(null);
-    const [optInText, setOptInText] = useState(false);
+    const [optInText, setOptInText] = useState(true);
+    
+    // Reset the form when props change (e.g., when userName and userPhone are cleared)
+    useEffect(() => {
+        setName(props.name || '');
+        setPhone(props.phone || '');
+        // Only reset the opt-in if the form is being completely reset
+        if (!props.name && !props.phone) {
+            setOptInText(true);
+        }
+    }, [props.name, props.phone, props.isOpen]);
     
     const validatePhoneNumber = (phone: string): boolean => {
         // Basic US phone number validation (accepts formats like: (123) 456-7890, 123-456-7890, 1234567890)
@@ -30,7 +42,46 @@ export default function UserInput(props: UserInputProps) {
             : digitsOnly;
         
         // Format to +1(number)
-        return `+1${digits}`;
+        return digits;
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setName(e.target.value);
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPhone(e.target.value);
+        if (phoneError && validatePhoneNumber(e.target.value)) {
+            setPhoneError(null);
+        }
+    };
+
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        
+        // Ensure at least name or phone number is provided
+        if (!name.trim() && !phone.trim()) {
+            setPhoneError("Please provide either your name or phone number");
+            return;
+        }
+        
+        // Only validate phone number if one is provided
+        if (phone.trim() && !validatePhoneNumber(phone)) {
+            setPhoneError("Please enter a valid phone number");
+            return;
+        }
+        
+        // Format phone number before sending to backend
+        const formattedPhone = phone.trim() ? formatPhoneNumber(phone) : '';
+        
+        console.log('UserInput submitting:', {
+            name,
+            formattedPhone,
+            optInText
+        });
+        
+        props.onClick(name, formattedPhone, optInText);
+        props.onClose();
     };
 
     return (
@@ -38,41 +89,23 @@ export default function UserInput(props: UserInputProps) {
     <ModalDialog>
       <DialogTitle>Your information</DialogTitle>
       <DialogContent>Please give us your Name and Phone Number.</DialogContent>
-      <form
-        onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
-          event.preventDefault();
-          const form = event.currentTarget;
-          const name = (form.elements[0] as HTMLInputElement).value;
-          const phone = (form.elements[1] as HTMLInputElement).value;
-          
-          if (!validatePhoneNumber(phone)) {
-            setPhoneError("Please enter a valid phone number");
-            return;
-          }
-          
-          // Format phone number before sending to backend
-          const formattedPhone = formatPhoneNumber(phone);
-          
-          props.onClick(name, formattedPhone, optInText);
-          props.onClose();
-        }}
-      >
+      <form onSubmit={handleSubmit}>
         <Stack spacing={2}>
           <FormControl>
             <FormLabel>Name</FormLabel>
-            <Input placeholder="Your Name" autoFocus required defaultValue={props.name} />
+            <Input 
+                placeholder="Your Name" 
+                autoFocus 
+                value={name}
+                onChange={handleNameChange}
+            />
           </FormControl>
           <FormControl error={!!phoneError}>
             <FormLabel>Phone Number</FormLabel>
             <Input 
               placeholder="(888)-888-8888" 
-              required 
-              defaultValue={props.phone}
-              onChange={(e) => {
-                if (phoneError && validatePhoneNumber(e.target.value)) {
-                  setPhoneError(null);
-                }
-              }}
+              value={phone}
+              onChange={handlePhoneChange}
             />
             {phoneError && <FormHelperText>{phoneError}</FormHelperText>}
           </FormControl>

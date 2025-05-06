@@ -86,10 +86,11 @@ export default function Receipt(props: ReceiptProps) {
                     <>
                         <Divider />
                         <Box sx={{ p: 2 }}>
-                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 2, color: 'white' }}>
+                            {/* <Stack direction="row" justifyContent="space-between" sx={{ mb: 2, color: 'white' }}>
                                 <Typography level="title-lg">Total:</Typography>
+                                Price display hidden by request
                                 <Typography level="title-lg">${total.toFixed(2)}</Typography>
-                            </Stack>
+                            </Stack> */}
                             
                             <Stack direction="row" spacing={1} width="100%">
                                 <Button 
