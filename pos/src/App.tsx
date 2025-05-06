@@ -9,6 +9,7 @@ import POSPage from './pages/POSPage';
 import OrdersPage from './pages/OrdersPage';
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { DonationButton } from './components/donations';
 
 const theme = extendTheme({
   colorSchemes: {
@@ -36,6 +37,7 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute element={<AdminPage />} />} />
         </Routes>
       </Router>
+      <DonationButton />
     </CssVarsProvider>
   )
 }
