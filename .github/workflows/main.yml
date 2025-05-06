@@ -1,23 +1,16 @@
-name: Deploy to Live Channel
-
+name: Deploy the main branch
 on:
   push:
     branches:
       - main
-    # Optionally configure to run only for specific files. For example:
-    # paths:
-    # - "website/**"
-
 jobs:
-  deploy_live_website:
+  main:
+    name: Deploy to Firebase
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      # Add any build steps here. For example:
-      - run: cd backend/functions && npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_CAFE_POS_GOUGH }}"
-          projectId: cafe-pos-gough
-          channelId: live
+    - uses: actions/checkout@v2
+    - uses: jsryudev/deploy-firebase-functions@v18.0.1
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        FIREBASE_PROJECT: cafe-pos-gough
+        FUNCTIONS_DIR: react-pos/backend/functions
