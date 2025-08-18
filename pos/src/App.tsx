@@ -5,11 +5,11 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import { CssVarsProvider, extendTheme } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
+import { Box, Typography } from '@mui/joy';
 import POSPage from './pages/POSPage';
 import OrdersPage from './pages/OrdersPage';
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import { DonationButton } from './components/donations';
 
 const theme = extendTheme({
   colorSchemes: {
@@ -28,16 +28,34 @@ function App() {
     <CssVarsProvider theme={theme} defaultMode="dark">
       <CssBaseline />
       <Router>
-        <Routes>
-          <Route path="/" element={<Navigate to="/pos" replace />} />
-          <Route path="/home" element={<Home count={count} setCount={setCount} />} />
-          <Route path="/pos" element={<POSPage />} />
-          <Route path="/orders" element={<ProtectedRoute element={<OrdersPage />} />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin" element={<ProtectedRoute element={<AdminPage />} />} />
-        </Routes>
+        <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/pos" replace />} />
+              <Route path="/home" element={<Home count={count} setCount={setCount} />} />
+              <Route path="/pos" element={<POSPage />} />
+              <Route path="/orders" element={<ProtectedRoute element={<OrdersPage />} />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/admin" element={<ProtectedRoute element={<AdminPage />} />} />
+            </Routes>
+          </Box>
+          
+          {/* Copyright Footer */}
+          <Box 
+            sx={{ 
+              mt: 'auto',
+              pt: 2, 
+              pb: 2,
+              textAlign: 'left',
+              backgroundColor: 'background.surface'
+            }}
+          >
+            <Typography level="body-sm" color="neutral">
+              © Arya Krishnan
+            </Typography>
+          </Box>
+        </Box>
       </Router>
-      <DonationButton />
     </CssVarsProvider>
   )
 }

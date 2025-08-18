@@ -23,6 +23,9 @@ export interface ItemData {
   imageUrl?: string;
   options?: Record<string, unknown>;
   title?: string; // For compatibility with existing code
+  category?: string; // Add category field
+  soldOut?: boolean; // Add sold out status
+  displayOrder?: number; // Add display order for sorting
 }
 
 export interface ApiResponse<T = Record<string, unknown>> {
@@ -157,6 +160,9 @@ export const apiService = {
         description?: string;
         imageUrl?: string;
         price: number;
+        category?: string;
+        soldOut?: boolean;
+        displayOrder?: number;
         options?: Array<{
           name: string;
           values: string[];
@@ -169,6 +175,9 @@ export const apiService = {
         description: item.description || '',
         imageUrl: item.imageUrl || '',
         price: item.price,
+        category: item.category || 'misc', // Include category with default to 'misc'
+        soldOut: item.soldOut ?? false, // Default to false if not present
+        displayOrder: item.displayOrder ?? 999, // Include displayOrder with default to 999
         options: Array.isArray(item.options) ? item.options : [],
       }));
       
@@ -597,5 +606,183 @@ export const apiService = {
     };
     
     return uploadWithRetry();
+  },
+
+  /**
+   * Update item status (sold out/available)
+   */
+  updateItemStatus: async (itemId: string, soldOut: boolean): Promise<ApiResponse<{ message: string, itemId: string, soldOut: boolean }>> => {
+    try {
+      console.log(`Updating item ${itemId} status to ${soldOut ? 'sold out' : 'available'}`);
+      const response = await fetch(`${API_BASE_URL}/items/${itemId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ soldOut }),
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to update item status: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Update item status response:', data);
+      
+      return {
+        success: true,
+        data: {
+          message: data.message,
+          itemId: data.itemId,
+          soldOut: data.soldOut
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update item status'
+      };
+    }
+  },
+
+  /**
+   * Delete an item
+   */
+  deleteItem: async (itemId: string): Promise<ApiResponse<{ message: string, itemId: string }>> => {
+    try {
+      console.log(`Deleting item: ${itemId}`);
+      const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to delete item: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Delete item response:', data);
+      
+      return {
+        success: true,
+        data: {
+          message: data.message,
+          itemId: data.itemId
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete item'
+      };
+    }
+  },
+
+  /**
+   * Update item category
+   */
+  updateItemCategory: async (itemId: string, category: string): Promise<ApiResponse<{ message: string, itemId: string, category: string }>> => {
+    try {
+      console.log(`Updating item ${itemId} category to ${category}`);
+      const response = await fetch(`${API_BASE_URL}/items/${itemId}/category`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ category }),
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to update item category: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Update item category response:', data);
+      
+      return {
+        success: true,
+        data: {
+          message: data.message,
+          itemId: data.itemId,
+          category: data.category
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update item category'
+      };
+    }
+  },
+
+  /**
+   * Update item display order
+   */
+  updateItemDisplayOrder: async (itemId: string, displayOrder: number): Promise<ApiResponse<{ message: string, itemId: string, displayOrder: number }>> => {
+    try {
+      console.log(`Updating item ${itemId} display order to ${displayOrder}`);
+      const response = await fetch(`${API_BASE_URL}/items/${itemId}/display-order`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ displayOrder }),
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to update item display order: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Update item display order response:', data);
+      
+      return {
+        success: true,
+        data: {
+          message: data.message,
+          itemId: data.itemId,
+          displayOrder: data.displayOrder
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update item display order'
+      };
+    }
   }
 }; 

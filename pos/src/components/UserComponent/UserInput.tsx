@@ -14,7 +14,7 @@ export default function UserInput(props: UserInputProps) {
     const [name, setName] = useState(props.name || '');
     const [phone, setPhone] = useState(props.phone || '');
     const [phoneError, setPhoneError] = useState<string | null>(null);
-    const [optInText, setOptInText] = useState(true);
+    const [optInText, setOptInText] = useState(false);
     
     // Reset the form when props change (e.g., when userName and userPhone are cleared)
     useEffect(() => {
@@ -88,7 +88,7 @@ export default function UserInput(props: UserInputProps) {
     <Modal open={props.isOpen} onClose={() => props.onClose()}>
     <ModalDialog>
       <DialogTitle>Your information</DialogTitle>
-      <DialogContent>Please give us your Name and Phone Number.</DialogContent>
+      <DialogContent>Please provide your name and phone number for order notifications.</DialogContent>
       <form onSubmit={handleSubmit}>
         <Stack spacing={2}>
           <FormControl>
@@ -111,7 +111,10 @@ export default function UserInput(props: UserInputProps) {
           </FormControl>
           <FormControl>
             <Checkbox 
-              label="Opt-in to receive text messages about your order"
+              label="By checking this box, you agree to receive text messages in regards to your placed order from Cafe Gough at 
+              the cell number used when placing your order. Consent is not a condition of any 
+              purchase. Reply HELP for help and STOP to cancel. Msg frequency varies. Msg & data rates may apply. 
+              All numbers will be used only for the current order placed. "
               checked={optInText}
               onChange={(e) => setOptInText(e.target.checked)}
             />

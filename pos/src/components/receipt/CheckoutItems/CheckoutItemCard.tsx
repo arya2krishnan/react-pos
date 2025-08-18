@@ -19,8 +19,8 @@ export interface CheckoutItemCardProps {
 export default function CheckoutItemCard(props: CheckoutItemCardProps) {
     const optionsString = props.options.join(', ');
     const [total, setTotal] = React.useState(props.quantity);
-    const itemPrice = props.price || 0;
-    const totalPrice = (itemPrice * total).toFixed(2);
+    // const itemPrice = props.price || 0;
+    // const totalPrice = (itemPrice * total).toFixed(2);
 
     React.useEffect(() => {
       setTotal(props.quantity);

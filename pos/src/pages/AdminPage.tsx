@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { apiService } from '../services/api';
 import NavigationBar from '../components/common/NavigationBar';
+import ItemsDashboard from '../components/Items/ItemsDashboard';
+import { Box, Tabs, TabList, Tab, Typography } from '@mui/joy';
 
 export default function AdminPage() {
   const [jsonData, setJsonData] = useState('');
@@ -8,6 +10,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [testResponse, setTestResponse] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   const handleTestApi = async () => {
     try {
@@ -160,130 +163,167 @@ export default function AdminPage() {
   return (
     <>
       <NavigationBar />
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', paddingTop: '70px' }}>
-        <h2>Admin Page</h2>
+      <Box sx={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', paddingTop: '70px' }}>
+        <Typography level="h2" sx={{ mb: 3 }}>
+          Admin Dashboard
+        </Typography>
         
-        <div style={{ marginBottom: '20px' }}>
-          <button 
-            onClick={handleTestApi}
-            disabled={isLoading}
-            style={{
-              padding: '10px 15px',
-              backgroundColor: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              marginRight: '10px'
-            }}
-          >
-            Test API Connection
-          </button>
-          
-          <button 
-            onClick={handleTestPost}
-            disabled={isLoading}
-            style={{
-              padding: '10px 15px',
-              backgroundColor: '#9C27B0',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              marginRight: '10px'
-            }}
-          >
-            Test POST Request
-          </button>
-          
-          <button 
-            onClick={handleDirectUploadTest}
-            disabled={isLoading || !file}
-            style={{
-              padding: '10px 15px',
-              backgroundColor: '#FF9800',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: (isLoading || !file) ? 'not-allowed' : 'pointer'
-            }}
-          >
-            Test Direct File Upload
-          </button>
-        </div>
-        
-        {testResponse && (
-          <div style={{ 
-            marginBottom: '20px',
-            padding: '10px',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '4px',
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap'
-          }}>
-            {testResponse}
-          </div>
+        <Tabs 
+          value={activeTab} 
+          onChange={(_, newValue) => setActiveTab(newValue as number)}
+          sx={{ mb: 3 }}
+        >
+          <TabList>
+            <Tab>Items Management</Tab>
+            <Tab>Create Item</Tab>
+            <Tab>API Testing</Tab>
+          </TabList>
+        </Tabs>
+
+        {/* Items Management Tab */}
+        {activeTab === 0 && (
+          <ItemsDashboard />
         )}
-        
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="jsonData" style={{ display: 'block', marginBottom: '5px' }}>
-              Item JSON Data:
-            </label>
-            <textarea 
-              id="jsonData"
-              value={jsonData}
-              onChange={(e) => setJsonData(e.target.value)}
-              style={{ 
-                width: '100%', 
-                height: '150px', 
-                padding: '8px',
-                fontFamily: 'monospace'
-              }}
-              placeholder='{"name": "Item Name", "price": 9.99, "category": "Category"}'
-            />
-          </div>
-          
-          <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="imageUpload" style={{ display: 'block', marginBottom: '5px' }}>
-              Item Image:
-            </label>
-            <input
-              type="file"
-              id="imageUpload"
-              accept="image/*"
-              onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
-              style={{ display: 'block' }}
-            />
-          </div>
-          
-          <button 
-            type="submit" 
-            disabled={isLoading}
-            style={{
-              padding: '10px 15px',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isLoading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isLoading ? 'Creating...' : 'Create Item'}
-          </button>
-        </form>
-        
-        {message && (
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '10px', 
-            backgroundColor: message.includes('Error') ? '#ffebee' : '#e8f5e9',
-            borderRadius: '4px'
-          }}>
-            {message}
-          </div>
+
+        {/* Create Item Tab */}
+        {activeTab === 1 && (
+          <Box>
+            <Typography level="h3" sx={{ mb: 3 }}>
+              Create New Item
+            </Typography>
+            
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '20px' }}>
+                <label htmlFor="jsonData" style={{ display: 'block', marginBottom: '5px' }}>
+                  Item JSON Data:
+                </label>
+                <textarea 
+                  id="jsonData"
+                  value={jsonData}
+                  onChange={(e) => setJsonData(e.target.value)}
+                  style={{ 
+                    width: '100%', 
+                    height: '150px', 
+                    padding: '8px',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder='{"name": "Item Name", "price": 9.99, "category": "Category"}'
+                />
+              </div>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <label htmlFor="imageUpload" style={{ display: 'block', marginBottom: '5px' }}>
+                  Item Image:
+                </label>
+                <input
+                  type="file"
+                  id="imageUpload"
+                  accept="image/*"
+                  onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                  style={{ display: 'block' }}
+                />
+              </div>
+              
+              <button 
+                type="submit" 
+                disabled={isLoading}
+                style={{
+                  padding: '10px 15px',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isLoading ? 'Creating...' : 'Create Item'}
+              </button>
+            </form>
+            
+            {message && (
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '10px', 
+                backgroundColor: message.includes('Error') ? '#ffebee' : '#e8f5e9',
+                borderRadius: '4px'
+              }}>
+                {message}
+              </div>
+            )}
+          </Box>
         )}
-      </div>
+
+        {/* API Testing Tab */}
+        {activeTab === 2 && (
+          <Box>
+            <Typography level="h3" sx={{ mb: 3 }}>
+              API Testing
+            </Typography>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <button 
+                onClick={handleTestApi}
+                disabled={isLoading}
+                style={{
+                  padding: '10px 15px',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  marginRight: '10px'
+                }}
+              >
+                Test API Connection
+              </button>
+              
+              <button 
+                onClick={handleTestPost}
+                disabled={isLoading}
+                style={{
+                  padding: '10px 15px',
+                  backgroundColor: '#9C27B0',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  marginRight: '10px'
+                }}
+              >
+                Test POST Request
+              </button>
+              
+              <button 
+                onClick={handleDirectUploadTest}
+                disabled={isLoading || !file}
+                style={{
+                  padding: '10px 15px',
+                  backgroundColor: '#FF9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: (isLoading || !file) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Test Direct File Upload
+              </button>
+            </div>
+            
+            {testResponse && (
+              <div style={{ 
+                marginBottom: '20px',
+                padding: '10px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {testResponse}
+              </div>
+            )}
+          </Box>
+        )}
+      </Box>
     </>
   );
 } 

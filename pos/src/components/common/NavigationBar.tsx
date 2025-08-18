@@ -47,7 +47,7 @@ const NavigationBar: React.FC = () => {
           size="sm"
         >
           <img 
-            src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGough.png?alt=media&token=0761e250-103c-449b-99b4-9261b7c8a7b0" 
+            src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSpring.png?alt=media&token=027e2fc6-6272-4a1c-abb9-87b30058d361" 
             alt="Cafe Gough Logo"
             style={{ width: '24px', height: '24px' }}
           />

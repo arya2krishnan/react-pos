@@ -1,30 +1,76 @@
 import { useState } from 'react';
 import { Button, Drawer, Box, Typography, IconButton, Stack } from '@mui/joy';
 import CloseIcon from '@mui/icons-material/Close';
-import FavoriteIcon from '@mui/icons-material/Favorite';
 
 export default function DonationButton() {
   const [open, setOpen] = useState(false);
 
-  const donateButtonText = "Donate <3";
-
   return (
     <>
       <Button
-        variant="soft"
+        variant="solid"
         color="success"
-        size="sm"
-        startDecorator={<FavoriteIcon />}
+        size="lg"
         onClick={() => setOpen(true)}
         sx={{
           position: 'fixed',
-          bottom: 16,
-          right: 16,
-          borderRadius: 'md',
+          bottom: 20,
+          right: 20,
+          borderRadius: 'xl',
           zIndex: 1100,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease-in-out',
+          minWidth: 200,
+          height: 70,
+          px: 3,
+          py: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          bgcolor: 'success.600',
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: '0.9rem',
+          textTransform: 'none',
+          '&:hover': {
+            bgcolor: 'success.700',
+            transform: 'scale(1.05)',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+          },
         }}
       >
-        {donateButtonText}
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            flexShrink: 0,
+            border: '2px solid rgba(255,255,255,0.3)',
+          }}
+        >
+          <img
+            src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FsnoopyMoney.jpg?alt=media&token=8f672bc8-1607-45d8-9392-38d22bb49b19"
+            alt="Snoopy with money"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        </Box>
+        <Box sx={{ textAlign: 'left', lineHeight: 1.2 }}>
+          <Typography
+            sx={{
+              fontWeight: 'bold',
+              color: 'white',
+              fontSize: '1.1rem',
+              lineHeight: 1.2,
+            }}
+          >
+            Leave a tip :)
+          </Typography>
+        </Box>
       </Button>
 
       <Drawer
@@ -48,16 +94,36 @@ export default function DonationButton() {
           }}
         >
           <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between', mb: 2 }}>
-            <Typography level="h4">Support Us</Typography>
+            <Typography level="h4">Leave a Tip 💝</Typography>
             <IconButton onClick={() => setOpen(false)}>
               <CloseIcon />
             </IconButton>
           </Box>
 
-          <Typography level="body-md" mb={2}>
-            Your donation helps us continue providing great service. Any amount is greatly appreciated. 
-            We really hope you enjoyed your drink and service at our cafe today! Thank you!
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+            <Box
+              sx={{
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FsnoopyMoney.jpg?alt=media&token=8f672bc8-1607-45d8-9392-38d22bb49b19"
+                alt="Snoopy with money"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            </Box>
+            <Typography level="body-lg" sx={{ color: 'text.secondary' }}>
+              Thanks for visiting Cafe Gough! Your tip helps us keep the coffee flowing and the smiles coming.
+            </Typography>
+          </Box>
 
           <Stack alignItems="center" spacing={2}>
             <Box 
@@ -76,10 +142,14 @@ export default function DonationButton() {
               }}
             >
               <img src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FIMG_1596.jpg?alt=media&token=f018a9cd-e83c-4bfe-9ab0-9103f8efea99"
-                alt="Donation QR Code"
+                alt="Tip QR Code"
                 style={{ maxWidth: '100%', maxHeight: '100%' }}
               />
             </Box>
+            
+            <Typography level="body-sm" sx={{ textAlign: 'center', color: 'text.secondary' }}>
+              Scan the QR code above to leave a tip via Venmo
+            </Typography>
             
             <Button 
               variant="solid" 

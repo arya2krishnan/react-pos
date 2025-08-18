@@ -23,7 +23,9 @@ import { storage } from './firebase';
 
 // Import the secret definition to ensure it's properly referenced
 import { defineSecret } from 'firebase-functions/params';
-const textbeltApiKey = defineSecret('TEXTBELT_API_KEY');
+const twilioAccountSid = defineSecret('TWILIO_ACCOUNT_SID');
+const twilioAuthToken = defineSecret('TWILIO_AUTH_TOKEN');
+const twilioPhoneNumber = defineSecret('TWILIO_PHONE_NUMBER');
 
 // Add proper interface to diagnose storage
 interface DiagnosticResults {
@@ -51,6 +53,8 @@ interface DiagnosticResults {
     message: string;
   };
 }
+
+
 
 const app = express();
 // Configure CORS for all origins and methods
@@ -103,23 +107,34 @@ app.post('/new-order', async (req, res) => {
     }
 
     try {
+        // Create the order document in Firestore
         const orderRef = db.collection('orders').doc();
+        const orderId = orderRef.id;
+        
         await orderRef.set({
+            id: orderId,
             orderNumber,
             customerName: customerName || '',
             customerPhone: customerPhone || '',
-            textOptIn,
             items,
             totalAmount,
             donation,
             orderDate,
+            textOptIn,
             finished: false,
+            createdAt: new Date().toISOString()
         });
-
-        res.status(201).json({ message: 'Order submitted successfully', orderId: orderRef.id });
+        
+        console.log(`Order created with ID: ${orderId}`);
+        
+        res.status(201).json({
+            message: 'Order created successfully',
+            orderId,
+            orderNumber
+        });
     } catch (error) {
-        console.error('Error submitting order:', error);
-        res.status(500).json({ error: 'Failed to submit order' });
+        console.error('Error creating order:', error);
+        res.status(500).json({ error: 'Failed to create order' });
     }
 });
 
@@ -165,16 +180,26 @@ app.post('/finish-order', async (req, res) => {
             orderNumber, 
             textOptIn: sendMessage 
         });
+
         
         if (sendMessage && customerPhone) {
             try {
                 console.log('Attempting to send text message to:', customerPhone);
-                await sendText(customerPhone, `CAFE GOUGH: \nHello ${customerName}! Your order ${orderNumber} is ready!\nHead to the counter to pick it up!`);
-                console.log('Text message sent successfully');
-                res.status(200).json({ message: 'Order finished successfully' });
+                const textResult = await sendText(customerPhone, `CAFE GOUGH: \nHello ${customerName}! Your order ${orderNumber} is ready!\nHead to the counter to pick it up!`);
+                
+                if (textResult.success) {
+                    res.status(200).json({ message: 'Order finished successfully' });
+                } else {
+                    console.log(`Text error: ${textResult.error || 'No error details'}`);
+                    res.status(200).json({ 
+                        message: 'Order finished but failed to send text message',
+                        textError: true,
+                        textErrorDetails: textResult.error
+                    });
+                }
             } catch (textError) {
-                console.error('Error sending text message:', textError);
-                res.status(200).json({ message: 'Order finished but failed to send text message', textError: true });
+                console.error('Error sending notification:', textError);
+                res.status(200).json({ message: 'Order finished but failed to send notifications', textError: true });
             }
         } else {
             console.log('Skipping text message - textOptIn:', sendMessage, 'customerPhone:', customerPhone ? 'present' : 'missing');
@@ -194,7 +219,24 @@ app.post('/delete-order', async (req, res) => {
 
 app.get('/items', async (req, res) => {
     const items = await db.collection('items').get();
-    const itemsData = items.docs.map((doc) => doc.data());
+    const itemsData = items.docs.map((doc) => {
+        const data = doc.data();
+        // Default soldOut to false if not present
+        return {
+            ...data,
+            soldOut: data.soldOut ?? false,
+            displayOrder: data.displayOrder ?? 999 // Default display order for existing items
+        };
+    });
+    
+    // Sort items by displayOrder, then by name as a fallback
+    itemsData.sort((a: any, b: any) => {
+        if (a.displayOrder !== b.displayOrder) {
+            return a.displayOrder - b.displayOrder;
+        }
+        return (a.name || '').localeCompare(b.name || '');
+    });
+    
     res.status(200).json(itemsData);
 });
 
@@ -203,7 +245,7 @@ app.post('/create-item', async (req, res) => {
         console.log('Received request body:', req.body);
         
         // This endpoint now only handles JSON data (no file upload)
-        const { name, price, description, options } = req.body;
+        const { name, price, description, options, category } = req.body;
         
         if (!name || price === undefined || price === null) {
             res.status(400).json({ 
@@ -234,7 +276,9 @@ app.post('/create-item', async (req, res) => {
                 name: name,
                 price: parseFloat(String(price)),
                 createdAt: new Date().toISOString(),
-                imageUrl: '' // Always provide a string value, never undefined
+                imageUrl: '', // Always provide a string value, never undefined
+                category: category,
+                displayOrder: 999 // Default display order for new items
             };
             
             // Only add these fields if they exist and are not undefined
@@ -1011,7 +1055,121 @@ app.get('/test-all-buckets', (req, res) => {
     })();
 });
 
+// Update item status (sold out/available)
+app.put('/items/:itemId/status', async (req: any, res: any) => {
+    try {
+        const { itemId } = req.params;
+        const { soldOut } = req.body;
+        
+        if (typeof soldOut !== 'boolean') {
+            return res.status(400).json({ error: 'soldOut must be a boolean value' });
+        }
+        
+        const itemRef = db.collection('items').doc(itemId);
+        const itemDoc = await itemRef.get();
+        
+        if (!itemDoc.exists) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        
+        await itemRef.update({ soldOut });
+        
+        res.status(200).json({ 
+            message: `Item ${soldOut ? 'marked as sold out' : 'marked as available'}`,
+            itemId,
+            soldOut
+        });
+    } catch (error) {
+        console.error('Error updating item status:', error);
+        res.status(500).json({ error: 'Failed to update item status' });
+    }
+});
+
+// Delete an item
+app.delete('/items/:itemId', async (req: any, res: any) => {
+    try {
+        const { itemId } = req.params;
+        
+        const itemRef = db.collection('items').doc(itemId);
+        const itemDoc = await itemRef.get();
+        
+        if (!itemDoc.exists) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        
+        await itemRef.delete();
+        
+        res.status(200).json({ 
+            message: 'Item deleted successfully',
+            itemId
+        });
+    } catch (error) {
+        console.error('Error deleting item:', error);
+        res.status(500).json({ error: 'Failed to delete item' });
+    }
+});
+
+// Update item category
+app.put('/items/:itemId/category', async (req: any, res: any) => {
+    try {
+        const { itemId } = req.params;
+        const { category } = req.body;
+        
+        if (!category || typeof category !== 'string') {
+            return res.status(400).json({ error: 'Category must be a valid string' });
+        }
+        
+        const itemRef = db.collection('items').doc(itemId);
+        const itemDoc = await itemRef.get();
+        
+        if (!itemDoc.exists) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        
+        await itemRef.update({ category });
+        
+        res.status(200).json({ 
+            message: 'Item category updated successfully',
+            itemId,
+            category
+        });
+    } catch (error) {
+        console.error('Error updating item category:', error);
+        res.status(500).json({ error: 'Failed to update item category' });
+    }
+});
+
+// Update item display order
+app.put('/items/:itemId/display-order', async (req: any, res: any) => {
+    try {
+        const { itemId } = req.params;
+        const { displayOrder } = req.body;
+        
+        if (typeof displayOrder !== 'number' || displayOrder < 0) {
+            return res.status(400).json({ error: 'Display order must be a non-negative number' });
+        }
+        
+        const itemRef = db.collection('items').doc(itemId);
+        const itemDoc = await itemRef.get();
+        
+        if (!itemDoc.exists) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        
+        await itemRef.update({ displayOrder });
+        
+        res.status(200).json({ 
+            message: 'Item display order updated successfully',
+            itemId,
+            displayOrder
+        });
+    } catch (error) {
+        console.error('Error updating item display order:', error);
+        res.status(500).json({ error: 'Failed to update item display order' });
+    }
+});
+
 export const api = onRequest({
-  secrets: [textbeltApiKey],  // Explicitly include the secret dependency here
+  secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],  // Explicitly include the secret dependency here
   maxInstances: 10,
 }, app);

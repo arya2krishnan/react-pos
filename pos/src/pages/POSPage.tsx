@@ -1,4 +1,4 @@
-import { Container, Typography, Alert, CircularProgress, Box } from '@mui/joy';
+import { Typography, Alert, CircularProgress, Box } from '@mui/joy';
 import ItemGrid from '../components/Items/ItemGrid';
 import CartButton from '../components/receipt/CartButton';
 import { useCartStore } from '../store/cartStore';
@@ -9,6 +9,7 @@ import DonationPrompt from '../components/UserComponent/DonationPrompt';
 import { apiService, OrderData, ItemData } from '../services/api';
 import StoreStatusIndicator from '../components/common/StoreStatusIndicator';
 import NavigationBar from '../components/common/NavigationBar';
+import { DonationButton } from '../components/donations';
 
 export default function POSPage() {
   const cartItems = useCartStore((state) => state.items);
@@ -26,7 +27,7 @@ export default function POSPage() {
   const [isUserInputOpen, setIsUserInputOpen] = useState(false);
   const [userName, setUserName] = useState('');
   const [userPhone, setUserPhone] = useState('');
-  const [textOptIn, setTextOptIn] = useState(false);
+  const [textOptIn, setTextOptIn] = useState(true);
   
   // State for donation prompt
   const [isDonationPromptOpen, setIsDonationPromptOpen] = useState(false);
@@ -94,7 +95,7 @@ export default function POSPage() {
     // Clear user information when the order number snackbar closes
     setUserName('');
     setUserPhone('');
-    setTextOptIn(false);
+    setTextOptIn(true);
   };
 
   const handleQuantityChange = (index: number, newQuantity: number) => {
@@ -137,15 +138,7 @@ export default function POSPage() {
   };
 
   const handleUserSubmit = async (name: string, phone: string, optIn: boolean) => {
-    // Validate that we have at least a name or phone number
-    if (!name.trim() && !phone.trim()) {
-      alert('Please provide either a name or phone number to continue.');
-      return;
-    }
-    
-    console.log('User submitted information:', { name, phone, optIn });
-    
-    // Update state first
+    console.log('User information received:', { name, phone, optIn });
     setUserName(name);
     setUserPhone(phone);
     setTextOptIn(optIn);
@@ -158,7 +151,7 @@ export default function POSPage() {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleDonationResponse = async (donated: boolean) => {
+  const handleDonationResponse = async (_donated: boolean) => {
     // Close the donation prompt
     handleCloseDonationPrompt();
     
@@ -173,7 +166,7 @@ export default function POSPage() {
     try {
       console.log('Processing order with user information:', { 
         userName: customerName, 
-        userPhone: customerPhone, 
+        userPhone: customerPhone,
         textOptIn: textOptInValue 
       });
       
@@ -262,19 +255,32 @@ export default function POSPage() {
         minHeight: 'calc(100vh - 64px)',
         bgcolor: 'background.body'
       }}>
-        <Container maxWidth="lg">
+        <Box sx={{ px: { xs: 1, md: 2 } }}>
           {/* Status and title row */}
           <Box sx={{ 
+            position: 'relative',
             display: 'flex', 
-            justifyContent: 'space-between', 
+            flexDirection: 'column',
+            justifyContent: 'center', 
             alignItems: 'center', 
             mt: 2,
-            mb: 3
+            mb: 4
           }}>
-            <Typography level="h3">
+            <Typography 
+              level="h2" 
+              sx={{ 
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: { xs: '1.75rem', md: '2.25rem' }
+              }}
+            >
               Point of Sale
             </Typography>
-            <StoreStatusIndicator position="navbar" />
+            
+            {/* Position the status indicator absolutely */}
+            <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
+              <StoreStatusIndicator position="navbar" />
+            </Box>
           </Box>
 
           {itemsError && (
@@ -306,10 +312,10 @@ export default function POSPage() {
 
           {/* Modified CartButton positioning */}
           <Box sx={{ position: 'relative', height: 0, zIndex: 1050 }}>
-            <Box sx={{ position: 'fixed', top: 74, right: 16 }}>
+            <Box sx={{ position: 'fixed', top: 64, right: 16 }}>
               <CartButton 
                 shopName="Cafe Gough"
-                shopUrl="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGough-removebg-preview.png?alt=media&token=4f2d37f4-8d88-41aa-8822-42aef0f2bbfb"
+                shopUrl="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSpring.png?alt=media&token=027e2fc6-6272-4a1c-abb9-87b30058d361"
                 items={checkoutItems}
                 onClick={handleCheckout}
                 onRemove={removeItem}
@@ -341,8 +347,11 @@ export default function POSPage() {
             name={userName}
             orderNumber={orderNumber}
           />
-        </Container>
+        </Box>
       </Box>
+      
+      {/* Donation Button - only visible on POS page */}
+      <DonationButton />
     </>
   );
 } 

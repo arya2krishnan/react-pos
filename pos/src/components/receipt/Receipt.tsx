@@ -16,10 +16,10 @@ export interface ReceiptProps {
 
 export default function Receipt(props: ReceiptProps) {
     const isEmpty = props.items.length === 0;
-    const total = props.items.reduce((sum, item) => {
-        // Assuming each item has a price property
-        return sum + (item.price || 0) * item.quantity;
-    }, 0);
+    // const total = props.items.reduce((sum, item) => {
+    //     // Assuming each item has a price property
+    //     return sum + (item.price || 0) * item.quantity;
+    // }, 0);
 
     return (
         <Box sx={{ 
