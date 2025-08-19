@@ -12,6 +12,10 @@ import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const theme = extendTheme({
+  fontFamily: {
+    display: '"Varela Round", sans-serif',
+    body: '"Varela Round", sans-serif',
+  },
   colorSchemes: {
     dark: {
       palette: {

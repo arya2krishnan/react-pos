@@ -39,7 +39,7 @@ const NavigationBar: React.FC = () => {
         zIndex: 1100,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', ml: 2, minWidth: '180px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', ml: { xs: 1, md: 2 }, minWidth: { xs: 'auto', md: '180px' } }}>
         <IconButton 
           onClick={() => navigate('/pos')}
           variant="plain"
@@ -47,20 +47,26 @@ const NavigationBar: React.FC = () => {
           size="sm"
         >
           <img 
-            src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSpring.png?alt=media&token=027e2fc6-6272-4a1c-abb9-87b30058d361" 
+            src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSummer.png?alt=media&token=f8575872-f846-4013-a2ba-f84f762d7d73" 
             alt="Cafe Gough Logo"
             style={{ width: '24px', height: '24px' }}
           />
         </IconButton>
-        <Typography level="title-lg" sx={{ ml: 1 }}>
+        <Typography 
+          level="title-lg" 
+          sx={{ 
+            ml: 1,
+            display: { xs: 'none', sm: 'block' } // Hide on very small screens
+          }}
+        >
           Cafe Gough
         </Typography>
       </Box>
       
       {/* Empty middle space to accommodate the status indicator */}
-      <Box sx={{ flexGrow: 1, minWidth: '100px' }} />
+      <Box sx={{ flexGrow: 1, minWidth: { xs: '20px', md: '100px' } }} />
       
-      <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
+      <Box sx={{ display: 'flex', gap: { xs: 0.5, md: 1 }, mr: { xs: 1, md: 2 } }}>
         {navigationButtons.map((button) => (
           <Button
             key={button.path}
@@ -69,8 +75,14 @@ const NavigationBar: React.FC = () => {
             startDecorator={button.icon}
             onClick={() => navigate(button.path)}
             size="sm"
+            sx={{
+              px: { xs: 1, md: 2 },
+              minWidth: { xs: 'auto', md: 'auto' }
+            }}
           >
-            {button.label}
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+              {button.label}
+            </Box>
           </Button>
         ))}
       </Box>

@@ -156,7 +156,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
     <Box sx={{ display: 'flex', flexGrow: 1 }}>
       {/* Vertical category tabs */}
       <Box sx={{ 
-        width: '160px', 
+        width: '140px', 
         flexShrink: 0, 
         position: 'sticky', 
         top: '80px', // Adjusted to account for the navigation bar
@@ -165,10 +165,10 @@ export default function ItemGrid({ items }: ItemGridProps) {
         overflowY: 'auto', // Allow scrolling if tabs are too tall
         display: { xs: 'none', md: 'block' }, // Hide on mobile
         '&::-webkit-scrollbar': {
-          width: '8px',
+          width: '6px',
         },
         '&::-webkit-scrollbar-thumb': {
-          borderRadius: '8px',
+          borderRadius: '6px',
           backgroundColor: 'rgba(0,0,0,0.1)',
         },
         '&::-webkit-scrollbar-track': {
@@ -181,10 +181,10 @@ export default function ItemGrid({ items }: ItemGridProps) {
           onChange={handleTabChange}
           aria-label="Product Categories"
           sx={{ 
-            minWidth: '160px',
+            minWidth: '140px',
             borderRadius: 'lg',
             boxShadow: 'md',
-            p: 1,
+            p: 0.5,
             bgcolor: 'background.surface',
             position: 'relative', // Important for sticky scrolling
             height: 'auto' // Allow the tabs to take their natural height
@@ -224,7 +224,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
                   key={category}
                   sx={{ 
                     px: 2,
-                    '--Tab-minHeight': '90px',
+                    '--Tab-minHeight': '70px',
                     gap: 1,
                   }}
                 >
@@ -241,8 +241,8 @@ export default function ItemGrid({ items }: ItemGridProps) {
       {/* Main content area */}
       <Box sx={{ 
         flexGrow: 1, 
-        pl: { xs: 0, md: 2 },
-        maxWidth: { xs: '100%', md: 'calc(100% - 160px)' }
+        pl: { xs: 0, md: 1.5 },
+        maxWidth: { xs: '100%', md: 'calc(100% - 140px)' }
       }}>
         {categoryOrder.map((category) => {
           const categoryItems = itemsByCategory[category] || [];
@@ -273,9 +273,10 @@ export default function ItemGrid({ items }: ItemGridProps) {
                     sm: 'repeat(2, 1fr)',
                     md: 'repeat(3, 1fr)',
                     lg: 'repeat(4, 1fr)',
-                    xl: 'repeat(5, 1fr)'
+                    xl: 'repeat(6, 1fr)',
+                    '2xl': 'repeat(7, 1fr)'
                   },
-                  gap: 3
+                  gap: 2.5
                 }}
               >
                 {categoryItems.map((item) => (

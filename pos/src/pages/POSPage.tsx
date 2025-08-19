@@ -251,30 +251,43 @@ export default function POSPage() {
       <Box sx={{ 
         pt: '64px', // Space for the navbar
         pb: 4, 
-        px: 2, 
+        px: { xs: 2, md: 1 }, 
         minHeight: 'calc(100vh - 64px)',
-        bgcolor: 'background.body'
+        bgcolor: 'background.body',
+        maxWidth: '100vw'
       }}>
-        <Box sx={{ px: { xs: 1, md: 2 } }}>
+        <Box sx={{ px: { xs: 1, md: 1 } }}>
           {/* Status and title row */}
           <Box sx={{ 
             position: 'relative',
             display: 'flex', 
-            flexDirection: 'column',
+            flexDirection: 'row',
             justifyContent: 'center', 
             alignItems: 'center', 
             mt: 2,
-            mb: 4
+            mb: 3,
+            gap: 2
           }}>
+            {/* Logo */}
+            <img 
+              src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSummer.png?alt=media&token=f8575872-f846-4013-a2ba-f84f762d7d73"
+              alt="Cafe Gough Logo"
+              style={{ 
+                width: '80px', 
+                height: '80px',
+                objectFit: 'contain'
+              }}
+            />
             <Typography 
               level="h2" 
               sx={{ 
-                textAlign: 'center',
                 fontWeight: 'bold',
-                fontSize: { xs: '1.75rem', md: '2.25rem' }
+                fontSize: { xs: '2.5rem', md: '3.5rem' },
+                fontFamily: '"Varela Round", sans-serif',
+                textTransform: 'uppercase'
               }}
             >
-              Point of Sale
+              Cafe Gough
             </Typography>
             
             {/* Position the status indicator absolutely */}
@@ -315,7 +328,7 @@ export default function POSPage() {
             <Box sx={{ position: 'fixed', top: 64, right: 16 }}>
               <CartButton 
                 shopName="Cafe Gough"
-                shopUrl="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSpring.png?alt=media&token=027e2fc6-6272-4a1c-abb9-87b30058d361"
+                shopUrl="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSummer.png?alt=media&token=f8575872-f846-4013-a2ba-f84f762d7d73"
                 items={checkoutItems}
                 onClick={handleCheckout}
                 onRemove={removeItem}
