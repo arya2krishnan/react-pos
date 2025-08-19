@@ -72,6 +72,7 @@ export default function CartButton(props: CartButtonProps) {
           onRemove={props.onRemove}
           onDestroy={props.onDestroy}
           onQuantityChange={props.onQuantityChange}
+          onClose={() => setOpen(false)}
         />
       </Drawer>
     </Box>

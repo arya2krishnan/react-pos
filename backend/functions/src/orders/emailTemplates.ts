@@ -12,7 +12,7 @@ export interface CartItem {
 }
 
 // Logo URL for the cafe
-const LOGO_URL = "https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSummer.png?alt=media&token=f8575872-f846-4013-a2ba-f84f762d7d73";
+const LOGO_URL = "https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSummer.png?alt=media&token=59189f18-52d0-48c6-a9f6-3dd19622ff35";
 
 /**
  * Generate HTML email for order confirmation

@@ -1,8 +1,9 @@
-import { Box, Button, Card, CardContent, CardOverflow, Divider, Stack, Typography } from "@mui/joy";
+import { Box, Button, Card, CardContent, CardOverflow, Divider, Stack, Typography, IconButton } from "@mui/joy";
 import { CheckoutItemCardProps } from "./CheckoutItems/CheckoutItemCard";
 import CheckoutItemHeader from "./CheckoutItems/CheckoutItemHeader";
 import CheckoutItemList from "./CheckoutItems/CheckoutItemList";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import CloseIcon from '@mui/icons-material/Close';
 
 export interface ReceiptProps {
     shopUrl: string;
@@ -12,6 +13,7 @@ export interface ReceiptProps {
     onRemove: (index: number) => void;
     onDestroy: () => void;
     onQuantityChange?: (index: number, newQuantity: number) => void;
+    onClose?: () => void;
 }
 
 export default function Receipt(props: ReceiptProps) {
@@ -39,7 +41,27 @@ export default function Receipt(props: ReceiptProps) {
                 }}
             >
                 <CardOverflow>
-                    <CheckoutItemHeader url={props.shopUrl} shopName={props.shopName} />
+                    <Box sx={{ position: 'relative' }}>
+                        <CheckoutItemHeader url={props.shopUrl} shopName={props.shopName} />
+                        {/* Mobile close button */}
+                        <IconButton
+                            onClick={props.onClose}
+                            sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                color: 'white',
+                                display: { xs: 'flex', md: 'none' }, // Only show on mobile
+                                zIndex: 1,
+                                bgcolor: 'rgba(0,0,0,0.3)',
+                                '&:hover': {
+                                    bgcolor: 'rgba(0,0,0,0.5)',
+                                }
+                            }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
                 </CardOverflow>
                 
                 <Typography level="h4" sx={{ p: 2, textAlign: 'center', color: 'white' }}>
