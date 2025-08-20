@@ -152,6 +152,20 @@ app.get('/unfinished-orders', async (req, res) => {
     }
 });
 
+app.get('/completed-orders', async (req, res) => {
+    try {
+        const orders = await db.collection('orders').where('finished', '==', true).get();
+        const ordersData = orders.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        res.status(200).json(ordersData);
+    } catch (error) {
+        console.error('Error fetching completed orders:', error);
+        res.status(500).json({ error: 'Failed to fetch completed orders' });
+    }
+});
+
 app.post('/finish-order', async (req, res) => {
     const { orderId } = req.body;
     console.log('Finish order request received for order ID:', orderId);

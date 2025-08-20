@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import NavigationBar from '../components/common/NavigationBar';
 import ItemsDashboard from '../components/Items/ItemsDashboard';
-import { Box, Tabs, TabList, Tab, Typography } from '@mui/joy';
+import { Box, Tabs, TabList, Tab, Typography, Button } from '@mui/joy';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 
 export default function AdminPage() {
   const [jsonData, setJsonData] = useState('');
@@ -11,6 +13,7 @@ export default function AdminPage() {
   const [message, setMessage] = useState('');
   const [testResponse, setTestResponse] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const navigate = useNavigate();
 
   const handleTestApi = async () => {
     try {
@@ -164,9 +167,19 @@ export default function AdminPage() {
     <>
       <NavigationBar />
       <Box sx={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', paddingTop: '70px' }}>
-        <Typography level="h2" sx={{ mb: 3 }}>
-          Admin Dashboard
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography level="h2">
+            Admin Dashboard
+          </Typography>
+          <Button 
+            onClick={() => navigate('/dashboard')} 
+            startDecorator={<AnalyticsIcon />}
+            size="lg"
+            color="primary"
+          >
+            Go to Dashboard
+          </Button>
+        </Box>
         
         <Tabs 
           value={activeTab} 

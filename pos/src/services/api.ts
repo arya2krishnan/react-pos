@@ -255,6 +255,41 @@ export const apiService = {
   },
 
   /**
+   * Get completed orders from the backend
+   */
+  getCompletedOrders: async (): Promise<ApiResponse<OrderData[]>> => {
+    try {
+      console.log('Fetching completed orders from API');
+      const response = await fetch(`${API_BASE_URL}/completed-orders`);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to fetch completed orders: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Completed orders retrieved from API:', data);
+      
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch completed orders'
+      };
+    }
+  },
+
+  /**
    * Get unfinished orders from the backend
    */
   getUnfinishedOrders: async (): Promise<ApiResponse<OrderData[]>> => {

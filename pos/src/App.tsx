@@ -9,6 +9,7 @@ import { Box, Typography } from '@mui/joy';
 import POSPage from './pages/POSPage';
 import OrdersPage from './pages/OrdersPage';
 import AdminPage from './pages/AdminPage';
+import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const theme = extendTheme({
@@ -39,7 +40,7 @@ function App() {
               <Route path="/home" element={<Home count={count} setCount={setCount} />} />
               <Route path="/pos" element={<POSPage />} />
               <Route path="/orders" element={<ProtectedRoute element={<OrdersPage />} />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/admin" element={<ProtectedRoute element={<AdminPage />} />} />
             </Routes>
           </Box>
@@ -96,8 +97,6 @@ function Home({ count, setCount }: HomeProps) {
   )
 }
 
-function Dashboard() {
-  return <h2>Dashboard</h2>
-}
+
 
 export default App
