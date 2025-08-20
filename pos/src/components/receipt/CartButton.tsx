@@ -20,6 +20,23 @@ export default function CartButton(props: CartButtonProps) {
   const [open, setOpen] = React.useState(false);
   const itemCount = props.items.length;
 
+  // Prevent body scroll when cart is open
+  React.useEffect(() => {
+    if (open) {
+      // Store original body styles
+      const originalStyle = window.getComputedStyle(document.body);
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollBarWidth}px`;
+      
+      return () => {
+        document.body.style.overflow = originalStyle.overflow;
+        document.body.style.paddingRight = originalStyle.paddingRight;
+      };
+    }
+  }, [open]);
+
   const toggleDrawer =
     (inOpen: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
       if (
@@ -57,9 +74,23 @@ export default function CartButton(props: CartButtonProps) {
               bgcolor: 'background.body',
               p: 0,
               width: { xs: '100%', sm: 400 },
+              // Prevent scroll events from bubbling to parent
+              overflow: 'hidden',
+              // Ensure proper touch handling on mobile
+              touchAction: 'pan-y',
+            }
+          },
+          backdrop: {
+            sx: {
+              // Prevent backdrop from capturing scroll events
+              pointerEvents: 'auto',
             }
           }
         }}
+        // Prevent scroll events from propagating to background
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onScroll={(e) => e.stopPropagation()}
       >
         <Receipt 
           shopUrl={props.shopUrl} 

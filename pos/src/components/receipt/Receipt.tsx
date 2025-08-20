@@ -29,7 +29,20 @@ export default function Receipt(props: ReceiptProps) {
             display: 'flex', 
             flexDirection: 'column',
             width: '100%',
-        }}>
+            // Prevent scroll events from propagating
+            overflow: 'hidden',
+            // Ensure proper touch handling on mobile
+            touchAction: 'pan-y',
+            // Better mobile landscape handling
+            '@media (orientation: landscape) and (max-height: 600px)': {
+                height: '100vh',
+            }
+        }}
+        // Stop propagation of touch and scroll events
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onScroll={(e) => e.stopPropagation()}
+        >
             <Card 
                 variant="solid" 
                 color="primary" 
@@ -37,7 +50,8 @@ export default function Receipt(props: ReceiptProps) {
                     minHeight: '100%', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    borderRadius: 0 
+                    borderRadius: 0,
+                    overflow: 'hidden',
                 }}
             >
                 <CardOverflow>
@@ -64,7 +78,17 @@ export default function Receipt(props: ReceiptProps) {
                     </Box>
                 </CardOverflow>
                 
-                <Typography level="h4" sx={{ p: 2, textAlign: 'center', color: 'white' }}>
+                <Typography level="h4" sx={{ 
+                    p: { xs: 0.5, md: 2 }, 
+                    textAlign: 'center', 
+                    color: 'white', 
+                    fontSize: { xs: '0.9rem', md: '1.25rem' },
+                    // Much more compact for landscape
+                    '@media (orientation: landscape) and (max-height: 600px)': {
+                        p: 0.25,
+                        fontSize: '0.8rem',
+                    }
+                }}>
                     Your Order
                 </Typography>
                 
@@ -74,8 +98,28 @@ export default function Receipt(props: ReceiptProps) {
                     flex: 1, 
                     overflow: 'auto', 
                     display: 'flex', 
-                    flexDirection: 'column'
-                }}>
+                    flexDirection: 'column',
+                    // Ensure proper scroll containment
+                    overscrollBehavior: 'contain',
+                    // Prevent scroll chaining
+                    scrollBehavior: 'smooth',
+                    // Better mobile scroll handling
+                    WebkitOverflowScrolling: 'touch',
+                    // Stop scroll events from bubbling
+                    '&::-webkit-scrollbar': {
+                        width: '6px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                        borderRadius: '6px',
+                        backgroundColor: 'rgba(255,255,255,0.3)',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                        backgroundColor: 'transparent',
+                    }
+                }}
+                // Stop propagation of scroll events
+                onScroll={(e) => e.stopPropagation()}
+                >
                     {isEmpty ? (
                         <Box sx={{ 
                             display: 'flex', 
@@ -107,7 +151,13 @@ export default function Receipt(props: ReceiptProps) {
                 {!isEmpty && (
                     <>
                         <Divider />
-                        <Box sx={{ p: 2 }}>
+                        <Box sx={{ 
+                            p: { xs: 0.5, md: 2 },
+                            // Much more compact for landscape
+                            '@media (orientation: landscape) and (max-height: 600px)': {
+                                p: 0.5,
+                            }
+                        }}>
                             {/* <Stack direction="row" justifyContent="space-between" sx={{ mb: 2, color: 'white' }}>
                                 <Typography level="title-lg">Total:</Typography>
                                 Price display hidden by request
@@ -119,7 +169,16 @@ export default function Receipt(props: ReceiptProps) {
                                     variant="soft" 
                                     color="neutral" 
                                     onClick={props.onDestroy}
-                                    sx={{ flex: 1 }}
+                                    sx={{ 
+                                        flex: 1,
+                                        fontSize: { xs: '0.8rem', md: 'inherit' },
+                                        py: { xs: 0.5, md: 1 },
+                                        // Even smaller for landscape
+                                        '@media (orientation: landscape) and (max-height: 600px)': {
+                                            fontSize: '0.7rem',
+                                            py: 0.25,
+                                        }
+                                    }}
                                 >
                                     Clear Cart
                                 </Button>
@@ -128,7 +187,16 @@ export default function Receipt(props: ReceiptProps) {
                                     color="neutral" 
                                     onClick={props.onClick}
                                     startDecorator={<ShoppingCartIcon />}
-                                    sx={{ flex: 2 }}
+                                    sx={{ 
+                                        flex: 2,
+                                        fontSize: { xs: '0.8rem', md: 'inherit' },
+                                        py: { xs: 0.5, md: 1 },
+                                        // Even smaller for landscape
+                                        '@media (orientation: landscape) and (max-height: 600px)': {
+                                            fontSize: '0.7rem',
+                                            py: 0.25,
+                                        }
+                                    }}
                                 >
                                     Checkout
                                 </Button>
