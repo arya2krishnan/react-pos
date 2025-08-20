@@ -253,8 +253,9 @@ export default function ItemsDashboard({ onItemsChange }: ItemsDashboardProps) {
 
   const getAvailableCategories = () => {
     return [
-      { value: 'sp', label: 'Specialty' },
+      { value: 'sp', label: 'Specialty Coffee' },
       { value: 'st', label: 'Standard' },
+      { value: 't', label: 'Specialty Tea' },
       { value: 'e', label: 'Espresso' },
       { value: 'cb', label: 'Cold Brew' },
       { value: 'm', label: 'Matcha' },

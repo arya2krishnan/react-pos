@@ -21,13 +21,14 @@ const categoryNames = {
   'e': 'Espresso',
   'cb': 'Cold Brew',
   'm': 'Matcha',
-  'sp': 'Specialty',
+  'sp': 'Specialty Coffee',
   'st': 'Standard',
+  't': 'Specialty Tea',
   'misc': 'Misc.'
 };
 
 // Category display order (excludes 'o' for old/outdated items)
-const categoryOrder = ['sp', 'st', 'e', 'cb', 'm', 'misc'];
+const categoryOrder = ['sp', 'st', 't', 'e', 'cb', 'm', 'misc'];
 
 export default function ItemGrid({ items }: ItemGridProps) {
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(null);
