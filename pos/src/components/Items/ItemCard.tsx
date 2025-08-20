@@ -25,6 +25,16 @@ export default function ItemCard(props: ItemCardProps) {
         flexDirection: 'column',
         position: 'relative',
         transition: 'transform 0.2s ease-in-out',
+        minHeight: '280px', // Base height for mobile
+        '@media (min-width: 600px)': {
+          minHeight: '320px'
+        },
+        '@media (min-width: 900px)': {
+          minHeight: '360px'
+        },
+        '@media (min-width: 1200px)': {
+          minHeight: '400px'
+        },
         ...(props.soldOut ? {} : {
           '&:hover': {
             transform: 'scale(1.02)'
@@ -37,13 +47,21 @@ export default function ItemCard(props: ItemCardProps) {
     >
       <CardOverflow>
         <Box sx={{ position: 'relative' }}>
-          <AspectRatio ratio="4/3" sx={{ minWidth: '100%' }}>
+          <AspectRatio 
+            ratio="1/1"
+            sx={{ 
+              minWidth: '100%'
+            }}
+          >
             <img
               src={props.url}
               loading="lazy"
               alt={props.title}
               style={{ 
                 objectFit: 'cover',
+                objectPosition: 'center center',
+                width: '100%',
+                height: '100%',
                 filter: props.soldOut ? 'grayscale(100%)' : 'none'
               }}
             />
@@ -69,7 +87,13 @@ export default function ItemCard(props: ItemCardProps) {
           )}
         </Box>
       </CardOverflow>
-      <CardContent sx={{ flex: 1 }}>
+      <CardContent sx={{ 
+        flex: 1, 
+        p: 1.5,  // Base padding for mobile
+        '@media (min-width: 900px)': {
+          p: 2
+        }
+      }}>
         <Typography
           level="title-lg"
           color="neutral"

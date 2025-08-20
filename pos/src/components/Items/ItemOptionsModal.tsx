@@ -69,9 +69,12 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
         aria-labelledby="nested-modal-title"
         aria-describedby="nested-modal-description"
         sx={(theme) => ({
-          maxWidth: { xs: '95vw', sm: '500px', md: '600px' },
+          width: { xs: '95vw', sm: '600px', md: '700px' },
+          maxWidth: { lg: '800px', xl: '900px' }, // Maximum size limits
           maxHeight: '90vh',
-          overflow: 'auto',
+          overflow: 'hidden', // Changed to hidden to prevent double scrollbars
+          display: 'flex',
+          flexDirection: 'column',
           [theme.breakpoints.only('xs')]: {
             top: 'unset',
             bottom: 0,
@@ -79,9 +82,9 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
             right: 0,
             borderRadius: 0,
             transform: 'none',
-            maxWidth: 'unset',
+            width: '100%',
             maxHeight: '95vh',
-            overflow: 'auto',
+            overflow: 'hidden',
             padding: '16px',
           },
           // Better landscape mode handling
@@ -92,31 +95,38 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
             right: 'auto',
             transform: 'translate(-50%, -50%)',
             maxHeight: '90vh',
-            maxWidth: '95vw',
+            width: '600px',
+            maxWidth: '700px',
             borderRadius: '12px',
-            overflow: 'auto',
+            overflow: 'hidden',
             padding: '20px',
           },
         })}
       >
-        {/* Image display at the top */}
+        {/* Image display at the top - consistent sizing */}
         {props.imageUrl && (
           <Box sx={{ 
-            display: 'flex', 
+            display: 'none', // Hidden by default
             justifyContent: 'center', 
-            mb: 3,
-            maxHeight: { xs: '150px', sm: '180px', md: '200px' },
-            maxWidth: '100%'
+            alignItems: 'center',
+            mb: 3, // More margin for larger modal
+            height: '200px',
+            width: '200px', // Square container for consistent aspect ratio
+            margin: '0 auto', // Center the container
+            overflow: 'hidden',
+            borderRadius: '12px',
+            // Show image only when both width AND height are sufficient
+            '@media (min-width: 900px) and (min-height: 600px)': {
+              display: 'flex'
+            }
           }}>
             <img 
               src={props.imageUrl} 
               alt={props.item}
               style={{ 
                 width: '100%', 
-                height: 'auto', 
-                maxHeight: '200px',
-                maxWidth: '100%',
-                objectFit: 'contain',
+                height: '100%',
+                objectFit: 'contain', // Show entire image without cropping
                 borderRadius: '12px',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
               }}
@@ -125,35 +135,48 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
         )}
         
         <Box sx={{ 
-          position: 'sticky', 
-          top: 0, 
+          flexShrink: 0,
           bgcolor: 'background.surface',
-          zIndex: 1,
-          pb: 2,
-          mb: 3,
+          pb: { xs: 1, md: 2 },
+          mb: { xs: 2, md: 3 },
           borderBottom: '1px solid',
-          borderColor: 'divider'
+          borderColor: 'divider',
+          textAlign: 'center',
         }}>
-          <Typography id="nested-modal-title" level="h2" sx={{ mb: 1 }}>
+          <Typography 
+            level="h2" 
+            sx={{ 
+              mb: 1,
+              fontSize: { xs: '1.1rem', md: '1.25rem' }
+            }}
+          >
             Customizations for {props.item}
           </Typography>
-          <Typography id="nested-modal-description" textColor="text.tertiary">
+          <Typography 
+            level="body-sm" 
+            textColor="text.tertiary"
+            sx={{
+              fontSize: { xs: '0.8rem', md: '0.9rem' }
+            }}
+          >
             Choose your options for {props.item}
           </Typography>
         </Box>
         
         <Box sx={{ 
-          maxHeight: { xs: '50vh', md: '60vh' },
+          flex: 1,
           overflowY: 'auto',
           mt: 2,
-          px: 1,
+          px: 2,
+          minHeight: 0, // Important for flex child
         }}>
           <Stack
             direction="column"
-            spacing={2}
+            spacing={3}
             sx={{
-              justifyContent: "center",
-              alignItems: "center",
+              width: '100%',
+              pb: 2, // Add some bottom padding
+              alignItems: 'center',
             }}
           >
           {props.options.map((option) => (
@@ -172,9 +195,15 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
             sx={{
             justifyContent: "center",
             alignItems: "center",
-            mt: 3,
+            mt: { xs: 2, md: 3 },
+            flexShrink: 0,
           }}>
-        <Typography level="h3">
+        <Typography 
+          level="h3"
+          sx={{
+            fontSize: { xs: '1.1rem', md: '1.25rem' }
+          }}
+        >
           Quantity
         </Typography>
         <ButtonGroup aria-label="outlined primary button group">
@@ -200,6 +229,7 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
             justifyContent: "space-between",
             alignItems: "center",
             mt: 3,
+            flexShrink: 0,
           }}
         >
           <Button

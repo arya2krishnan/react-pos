@@ -28,13 +28,13 @@ const categoryNames = {
 };
 
 // Category display order (excludes 'o' for old/outdated items)
-const categoryOrder = ['sp', 'st', 't', 'e', 'cb', 'm', 'misc'];
+const categoryOrder = ['sp', 't', 'st', 'e', 'cb', 'm', 'misc'];
 
 export default function ItemGrid({ items }: ItemGridProps) {
   const [selectedItem, setSelectedItem] = useState<ItemData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState(0);
-  const [isManualTabClick, setIsManualTabClick] = useState(false);
+  const [isManualNavigation, setIsManualNavigation] = useState(false);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const addItem = useCartStore((state) => state.addItem);
 
@@ -84,7 +84,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
     if (value !== null) {
       const newValue = typeof value === 'string' ? parseInt(value, 10) : value;
       setActiveCategory(newValue);
-      setIsManualTabClick(true);
+      setIsManualNavigation(true);
       
       // Get the category key at this index (filtering out empty categories)
       const visibleCategories = categoryOrder.filter(cat => 
@@ -95,14 +95,15 @@ export default function ItemGrid({ items }: ItemGridProps) {
         const categoryKey = visibleCategories[newValue];
         const element = categoryRefs.current[categoryKey];
         if (element) {
+          // Smooth scroll to the element
           element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }
       
-      // Reset the manual click flag after a delay to allow scroll detection to resume
+      // Reset manual navigation flag after scroll completes
       setTimeout(() => {
-        setIsManualTabClick(false);
-      }, 1000); // 1 second delay
+        setIsManualNavigation(false);
+      }, 1000);
     }
   };
 
@@ -111,47 +112,66 @@ export default function ItemGrid({ items }: ItemGridProps) {
     (itemsByCategory[category]?.length || 0) > 0
   );
 
-  // Scroll detection to update active tab
+
+
+  // Scroll detection to update active tab when scrolling manually
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (isManualTabClick) return;
+    let scrollTimeout: NodeJS.Timeout;
+    
+    const handleScroll = () => {
+      if (isManualNavigation) return;
+      
+      // Debounce scroll events
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
         
-        // Find the section with the highest intersection ratio
-        let maxRatio = 0;
-        let mostVisibleCategory = '';
+        // Find which category section is most visible
+        let selectedCategory = '';
+        let bestScore = 0;
         
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
-            maxRatio = entry.intersectionRatio;
-            mostVisibleCategory = entry.target.getAttribute('data-category') || '';
+        visibleCategories.forEach(category => {
+          const element = categoryRefs.current[category];
+          if (element) {
+            const rect = element.getBoundingClientRect();
+            const elementTop = rect.top + scrollTop;
+            const elementHeight = rect.height;
+            
+            // Calculate how much of this section is visible
+            const visibleTop = Math.max(0, scrollTop - elementTop);
+            const visibleBottom = Math.min(elementHeight, scrollTop + windowHeight - elementTop);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            
+            // Score based on visible percentage and position
+            const visibilityScore = visibleHeight / elementHeight;
+            const positionScore = 1 - (Math.abs(rect.top) / windowHeight);
+            const totalScore = visibilityScore * positionScore;
+            
+            if (totalScore > bestScore && visibilityScore > 0.3) {
+              bestScore = totalScore;
+              selectedCategory = category;
+            }
           }
         });
         
-        // Update if we have a significantly visible section
-        if (mostVisibleCategory && maxRatio > 0.4) {
-          const categoryIndex = visibleCategories.indexOf(mostVisibleCategory);
-          if (categoryIndex !== -1) {
+        // Update active category if we found a suitable one
+        if (selectedCategory) {
+          const categoryIndex = visibleCategories.indexOf(selectedCategory);
+          if (categoryIndex !== -1 && categoryIndex !== activeCategory) {
             setActiveCategory(categoryIndex);
           }
         }
-      },
-      {
-        threshold: 0.4, // Higher threshold to prevent flickering
-        rootMargin: '-20% 0px -20% 0px'
-      }
-    );
+      }, 100); // 100ms debounce
+    };
 
-    // Observe all category sections
-    visibleCategories.forEach(category => {
-      const element = categoryRefs.current[category];
-      if (element) {
-        observer.observe(element);
-      }
-    });
-
-    return () => observer.disconnect();
-  }, [visibleCategories]);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, [visibleCategories, isManualNavigation, activeCategory]);
 
   return (
     <Box sx={{ display: 'flex', flexGrow: 1 }}>
@@ -255,7 +275,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
             <Box 
               key={category} 
               sx={{ 
-                mb: 5,
+                mb: 8, // Increased margin bottom for better section separation
                 maxWidth: '100%'
               }}
               ref={(el: HTMLDivElement | null) => categoryRefs.current[category] = el}
@@ -274,10 +294,11 @@ export default function ItemGrid({ items }: ItemGridProps) {
                     sm: 'repeat(2, 1fr)',
                     md: 'repeat(3, 1fr)',
                     lg: 'repeat(4, 1fr)',
-                    xl: 'repeat(6, 1fr)',
-                    '2xl': 'repeat(7, 1fr)'
+                    xl: 'repeat(4, 1fr)', // Limit to 4 cards per row on larger screens
+                    '2xl': 'repeat(4, 1fr)' // Keep it at 4 even on very large screens
                   },
-                  gap: 2.5
+                  gap: 3, // Increased gap for better spacing
+                  maxWidth: '100%'
                 }}
               >
                 {categoryItems.map((item) => (

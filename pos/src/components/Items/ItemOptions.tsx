@@ -29,8 +29,8 @@ export default function ItemOptions(props: ItemOptionsProps) {
   };
 
   return (
-    <Sheet variant="outlined" sx={{ width: 360, p: 2, borderRadius: 'sm' }}>
-      <Typography id="rank" level="body-sm" sx={{ fontWeight: 'lg', mb: 1.5 }}>
+    <Sheet variant="outlined" sx={{ width: '100%', maxWidth: 360, p: 2, borderRadius: 'sm', mx: 'auto' }}>
+      <Typography id="rank" level="body-sm" sx={{ fontWeight: 'lg', mb: 1.5, textAlign: 'left' }}>
         {props.option}
       </Typography>
       <div role="group" aria-labelledby="rank">
