@@ -819,5 +819,49 @@ export const apiService = {
         error: error instanceof Error ? error.message : 'Failed to update item display order'
       };
     }
+  },
+
+  /**
+   * Authenticate admin user
+   */
+  authenticateAdmin: async (password: string): Promise<ApiResponse<{ success: boolean, message: string }>> => {
+    try {
+      console.log('Authenticating admin user');
+      const response = await fetch(`${API_BASE_URL}/admin-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Could not get error text';
+        }
+        console.error('Server error response:', errorText);
+        throw new Error(`Authentication failed: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Authentication response:', data);
+      
+      return {
+        success: data.success,
+        data: {
+          success: data.success,
+          message: data.message
+        }
+      };
+    } catch (error) {
+      console.error('API error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Authentication failed'
+      };
+    }
   }
 }; 

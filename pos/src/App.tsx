@@ -40,7 +40,7 @@ function App() {
               <Route path="/home" element={<Home count={count} setCount={setCount} />} />
               <Route path="/pos" element={<POSPage />} />
               <Route path="/orders" element={<ProtectedRoute element={<OrdersPage />} />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<ProtectedRoute element={<DashboardPage />} />} />
               <Route path="/admin" element={<ProtectedRoute element={<AdminPage />} />} />
             </Routes>
           </Box>

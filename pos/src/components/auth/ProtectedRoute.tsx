@@ -6,6 +6,7 @@ import Typography from '@mui/joy/Typography';
 import Modal from '@mui/joy/Modal';
 import ModalDialog from '@mui/joy/ModalDialog';
 import Input from '@mui/joy/Input';
+import { apiService } from '../../services/api';
 
 interface ProtectedRouteProps {
   element: React.ReactNode;
@@ -25,19 +26,31 @@ const ProtectedRoute = ({ element }: ProtectedRouteProps) => {
     setOpen(true);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'ilovecafegough') {
-      sessionStorage.setItem('isAuthenticated', 'true');
-      setIsAuthenticated(true);
-      setOpen(false);
-      setError('');
-    } else {
-      setError('Incorrect password');
+    
+    try {
+      const response = await apiService.authenticateAdmin(password);
+      
+      if (response.success && response.data?.success) {
+        sessionStorage.setItem('isAuthenticated', 'true');
+        setIsAuthenticated(true);
+        setOpen(false);
+        setError('');
+      } else {
+        setError('Incorrect password');
+        setTimeout(() => {
+          setOpen(false);
+          navigate('/pos');
+        }, 1500); // Show error message for 1.5 seconds before redirecting
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      setError('Authentication failed. Please try again.');
       setTimeout(() => {
         setOpen(false);
         navigate('/pos');
-      }, 1500); // Show error message for 1.5 seconds before redirecting
+      }, 1500);
     }
   };
 

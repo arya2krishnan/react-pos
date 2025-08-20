@@ -26,6 +26,7 @@ import { defineSecret } from 'firebase-functions/params';
 const twilioAccountSid = defineSecret('TWILIO_ACCOUNT_SID');
 const twilioAuthToken = defineSecret('TWILIO_AUTH_TOKEN');
 const twilioPhoneNumber = defineSecret('TWILIO_PHONE_NUMBER');
+const adminPassword = defineSecret('ADMIN_PASSWORD');
 
 // Add proper interface to diagnose storage
 interface DiagnosticResults {
@@ -1183,7 +1184,39 @@ app.put('/items/:itemId/display-order', async (req: any, res: any) => {
     }
 });
 
+// Admin authentication endpoint
+app.post('/admin-auth', async (req: any, res: any) => {
+    try {
+        const { password } = req.body;
+        
+        if (!password) {
+            return res.status(400).json({ error: 'Password is required' });
+        }
+        
+        // Get the admin password from Firebase secrets
+        const correctPassword = adminPassword.value();
+        
+        if (password === correctPassword) {
+            res.status(200).json({ 
+                success: true,
+                message: 'Authentication successful'
+            });
+        } else {
+            res.status(401).json({ 
+                success: false,
+                message: 'Invalid password'
+            });
+        }
+    } catch (error) {
+        console.error('Error in admin authentication:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Authentication failed' 
+        });
+    }
+});
+
 export const api = onRequest({
-  secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],  // Explicitly include the secret dependency here
+  secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber, adminPassword],  // Explicitly include the secret dependency here
   maxInstances: 10,
 }, app);
