@@ -14,6 +14,7 @@ export interface ItemOptionsModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit?: (selectedValues: Record<string, string[]>, quantity: number) => void;
+    imageUrl?: string;
 };
 
 export default function ItemOptionsModal(props: ItemOptionsModalProps) {
@@ -68,6 +69,9 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
         aria-labelledby="nested-modal-title"
         aria-describedby="nested-modal-description"
         sx={(theme) => ({
+          maxWidth: { xs: '95vw', sm: '500px', md: '600px' },
+          maxHeight: '90vh',
+          overflow: 'auto',
           [theme.breakpoints.only('xs')]: {
             top: 'unset',
             bottom: 0,
@@ -95,6 +99,31 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
           },
         })}
       >
+        {/* Image display at the top */}
+        {props.imageUrl && (
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            mb: 3,
+            maxHeight: { xs: '150px', sm: '180px', md: '200px' },
+            maxWidth: '100%'
+          }}>
+            <img 
+              src={props.imageUrl} 
+              alt={props.item}
+              style={{ 
+                width: '100%', 
+                height: 'auto', 
+                maxHeight: '200px',
+                maxWidth: '100%',
+                objectFit: 'contain',
+                borderRadius: '12px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+              }}
+            />
+          </Box>
+        )}
+        
         <Box sx={{ 
           position: 'sticky', 
           top: 0, 

@@ -313,6 +313,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
           onSubmit={(selectedValues: Record<string, string[]>, quantity: number) => {
             handleAddToCart(selectedItem, selectedValues, quantity);
           }}
+          imageUrl={selectedItem.imageUrl}
         />
       )}
     </Box>
