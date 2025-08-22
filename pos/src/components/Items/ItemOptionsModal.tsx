@@ -10,6 +10,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 
 export interface ItemOptionsModalProps {
     item: string;
+    description: string;
     options: ItemOptionsProps[];
     isOpen: boolean;
     onClose: () => void;
@@ -75,6 +76,7 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
           overflow: 'hidden', // Changed to hidden to prevent double scrollbars
           display: 'flex',
           flexDirection: 'column',
+
           [theme.breakpoints.only('xs')]: {
             top: 'unset',
             bottom: 0,
@@ -86,6 +88,7 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
             maxHeight: '95vh',
             overflow: 'hidden',
             padding: '16px',
+
           },
           // Better landscape mode handling
           '@media (orientation: landscape) and (max-height: 600px)': {
@@ -100,6 +103,7 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
             borderRadius: '12px',
             overflow: 'hidden',
             padding: '20px',
+
           },
         })}
       >
@@ -150,7 +154,7 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
               fontSize: { xs: '1.1rem', md: '1.25rem' }
             }}
           >
-            Customizations for {props.item}
+            Choose your options for {props.item}
           </Typography>
           <Typography 
             level="body-sm" 
@@ -159,7 +163,7 @@ export default function ItemOptionsModal(props: ItemOptionsModalProps) {
               fontSize: { xs: '0.8rem', md: '0.9rem' }
             }}
           >
-            Choose your options for {props.item}
+            {props.description}
           </Typography>
         </Box>
         

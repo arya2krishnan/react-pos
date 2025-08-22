@@ -35,6 +35,8 @@ export default function ItemCard(props: ItemCardProps) {
         '@media (min-width: 1200px)': {
           minHeight: '400px'
         },
+        padding: 0,
+        margin: 0,
         ...(props.soldOut ? {} : {
           '&:hover': {
             transform: 'scale(1.02)'
@@ -45,12 +47,27 @@ export default function ItemCard(props: ItemCardProps) {
       color="neutral" 
       invertedColors
     >
-      <CardOverflow>
-        <Box sx={{ position: 'relative' }}>
+      <Box
+        onClick={props.soldOut ? undefined : props.onClick}
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          cursor: props.soldOut ? 'default' : 'pointer'
+        }}
+      >
+        <Box sx={{ 
+          position: 'relative',
+          margin: 0,
+          padding: 0,
+          overflow: 'hidden'
+        }}>
           <AspectRatio 
             ratio="1/1"
             sx={{ 
-              minWidth: '100%'
+              minWidth: '100%',
+              margin: 0,
+              padding: 0
             }}
           >
             <img
@@ -62,7 +79,8 @@ export default function ItemCard(props: ItemCardProps) {
                 objectPosition: 'center center',
                 width: '100%',
                 height: '100%',
-                filter: props.soldOut ? 'grayscale(100%)' : 'none'
+                filter: props.soldOut ? 'grayscale(100%)' : 'none',
+                display: 'block'
               }}
             />
           </AspectRatio>
@@ -86,29 +104,32 @@ export default function ItemCard(props: ItemCardProps) {
             </Chip>
           )}
         </Box>
-      </CardOverflow>
-      <CardContent sx={{ 
-        flex: 1, 
-        p: 1.5,  // Base padding for mobile
-        '@media (min-width: 900px)': {
-          p: 2
-        }
-      }}>
-        <Typography
-          level="title-lg"
-          color="neutral"
-          textColor="text.primary"
-          sx={{ fontWeight: 'md' }}
-        >
-          {props.title}
-        </Typography>
-        <Typography level="body-xs">{props.description}</Typography>
-      </CardContent>
+        <CardContent sx={{ 
+          flex: 1, 
+          p: 1.5,  // Base padding for mobile
+          '@media (min-width: 900px)': {
+            p: 2
+          }
+        }}>
+          <Typography
+            level="title-lg"
+            color="neutral"
+            textColor="text.primary"
+            sx={{ fontWeight: 'md' }}
+          >
+            {props.title}
+          </Typography>
+          <Typography level="body-xs">{props.description}</Typography>
+        </CardContent>
+      </Box>
       <CardOverflow>
         <Button 
           variant="soft" 
           size="lg" 
-          onClick={props.onClick} 
+          onClick={(e) => {
+            e.stopPropagation();
+            props.onClick();
+          }} 
           disabled={props.soldOut}
           sx={{ width: '100%' }}
         >

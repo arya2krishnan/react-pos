@@ -112,8 +112,6 @@ export default function ItemGrid({ items }: ItemGridProps) {
     (itemsByCategory[category]?.length || 0) > 0
   );
 
-
-
   // Scroll detection to update active tab when scrolling manually
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout;
@@ -321,6 +319,7 @@ export default function ItemGrid({ items }: ItemGridProps) {
       {selectedItem && (
         <ItemOptionsModal
           item={selectedItem.title || selectedItem.name}
+          description={selectedItem.description || ''}
           options={Array.isArray(selectedItem.options) 
             ? selectedItem.options.map((option: ItemOption) => ({
                 option: option.name,
