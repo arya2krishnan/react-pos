@@ -108,6 +108,14 @@ app.post('/new-order', async (req, res) => {
     }
 
     try {
+        // Get current store session number
+        const storeSessionDoc = await db.collection('store-sessions').doc('current').get();
+        let storeNumber = 0; // Default to store 0 for existing data
+        
+        if (storeSessionDoc.exists) {
+            storeNumber = storeSessionDoc.get('currentStoreNumber') || 0;
+        }
+        
         // Create the order document in Firestore
         const orderRef = db.collection('orders').doc();
         const orderId = orderRef.id;
@@ -123,15 +131,17 @@ app.post('/new-order', async (req, res) => {
             orderDate,
             textOptIn,
             finished: false,
+            storeNumber, // Add store number to order
             createdAt: new Date().toISOString()
         });
         
-        console.log(`Order created with ID: ${orderId}`);
+        console.log(`Order created with ID: ${orderId} for store ${storeNumber}`);
         
         res.status(201).json({
             message: 'Order created successfully',
             orderId,
-            orderNumber
+            orderNumber,
+            storeNumber
         });
     } catch (error) {
         console.error('Error creating order:', error);
@@ -346,6 +356,161 @@ app.get('/shop-status', async (req, res) => {
     const shopDoc = await db.collection('shop').doc('open').get();
     const isOpen = shopDoc.get('isOpen');
     res.status(200).json({ isOpen });
+});
+
+app.post('/toggle-shop-status', async (req, res) => {
+    const { isOpen } = req.body;
+    
+    try {
+        console.log(`Toggling shop status to: ${isOpen ? 'open' : 'closed'}`);
+        
+        // Update shop status
+        await db.collection('shop').doc('open').set({ isOpen });
+        console.log('Shop status updated in database');
+        
+        // If opening the shop, start a new store session
+        if (isOpen) {
+            console.log('Opening shop - creating new store session...');
+            const storeSessionRef = db.collection('store-sessions').doc('current');
+            const storeSessionDoc = await storeSessionRef.get();
+            
+            let currentStoreNumber = 0;
+            if (storeSessionDoc.exists) {
+                currentStoreNumber = storeSessionDoc.get('currentStoreNumber') || 0;
+                console.log(`Current store number from existing session: ${currentStoreNumber}`);
+            } else {
+                console.log('No existing current session found, starting with store number 0');
+            }
+            
+            // Increment store number for new session
+            const newStoreNumber = currentStoreNumber + 1;
+            console.log(`Incrementing store number to: ${newStoreNumber}`);
+            
+            // Create a temporary session document to track this opening
+            const tempSessionId = `temp-${Date.now()}`;
+            console.log(`Creating temporary session with ID: ${tempSessionId}`);
+            
+            await db.collection('store-sessions').doc(tempSessionId).set({
+                storeNumber: newStoreNumber, // Use the new store number
+                startTime: new Date().toISOString(),
+                endTime: null,
+                isActive: true,
+                orderCount: 0,
+                totalRevenue: 0,
+                isTemporary: true // Mark as temporary until we know if orders came in
+            });
+            
+            // Update current session reference with new store number
+            await storeSessionRef.set({
+                currentStoreNumber: newStoreNumber,
+                currentTempSessionId: tempSessionId,
+                lastUpdated: new Date().toISOString()
+            });
+            
+            console.log(`Temporary store session started with number ${newStoreNumber}`);
+        } else {
+            console.log('Closing shop - processing store session...');
+            // If closing the shop, end the current store session
+            const storeSessionDoc = await db.collection('store-sessions').doc('current').get();
+            
+            if (storeSessionDoc.exists) {
+                const currentStoreNumber = storeSessionDoc.get('currentStoreNumber') || 0;
+                const tempSessionId = storeSessionDoc.get('currentTempSessionId');
+                
+                console.log(`Current store number: ${currentStoreNumber}, Temp session ID: ${tempSessionId}`);
+                
+                if (tempSessionId) {
+                    // Get the temporary session
+                    const tempSessionDoc = await db.collection('store-sessions').doc(tempSessionId).get();
+                    
+                    if (tempSessionDoc.exists) {
+                        const tempSessionData = tempSessionDoc.data();
+                        console.log('Found temporary session data:', tempSessionData);
+                        
+                        if (tempSessionData) {
+                            const sessionStoreNumber = tempSessionData.storeNumber;
+                            console.log(`Looking for orders with storeNumber=${sessionStoreNumber}, finished=true`);
+                            
+                            // Get all orders for this store number (no time filter needed since we're checking the specific store number)
+                            const ordersSnapshot = await db.collection('orders')
+                                .where('storeNumber', '==', sessionStoreNumber)
+                                .where('finished', '==', true)
+                                .get();
+                            
+                            console.log(`Found ${ordersSnapshot.docs.length} orders for store ${sessionStoreNumber}`);
+                            
+                            let orderCount = 0;
+                            let totalRevenue = 0;
+                            
+                            ordersSnapshot.forEach(doc => {
+                                const orderData = doc.data();
+                                orderCount++;
+                                totalRevenue += orderData.totalAmount || 0;
+                                console.log(`Order ${doc.id}: amount=${orderData.totalAmount}`);
+                            });
+                            
+                            console.log(`Session summary: ${orderCount} orders, $${totalRevenue} revenue`);
+                            
+                            if (orderCount > 0) {
+                                // If orders were placed, create permanent session
+                                console.log(`Creating permanent session ${sessionStoreNumber}`);
+                                
+                                // Update the temporary session to permanent
+                                await db.collection('store-sessions').doc(tempSessionId).update({
+                                    endTime: new Date().toISOString(),
+                                    isActive: false,
+                                    isTemporary: false,
+                                    orderCount,
+                                    totalRevenue
+                                });
+                                
+                                // Keep the current store number (don't change it)
+                                await db.collection('store-sessions').doc('current').set({
+                                    currentStoreNumber: sessionStoreNumber,
+                                    currentTempSessionId: null,
+                                    lastUpdated: new Date().toISOString()
+                                });
+                                
+                                console.log(`Store session ${sessionStoreNumber} ended with ${orderCount} orders and $${totalRevenue} revenue`);
+                            } else {
+                                // If no orders, delete the temporary session and revert store number
+                                console.log('No orders found, deleting temporary session and reverting store number');
+                                await db.collection('store-sessions').doc(tempSessionId).delete();
+                                
+                                // Revert to previous store number
+                                const previousStoreNumber = sessionStoreNumber - 1;
+                                await db.collection('store-sessions').doc('current').set({
+                                    currentStoreNumber: previousStoreNumber,
+                                    currentTempSessionId: null,
+                                    lastUpdated: new Date().toISOString()
+                                });
+                                
+                                console.log(`Temporary store session ended with no orders - reverted to store number ${previousStoreNumber}`);
+                            }
+                        } else {
+                            console.log('No temporary session data found');
+                        }
+                    } else {
+                        console.log(`Temporary session document ${tempSessionId} not found`);
+                    }
+                } else {
+                    console.log('No temporary session ID found in current session document');
+                }
+            } else {
+                console.log('No current session document found');
+            }
+        }
+        
+        console.log('Shop status toggle completed successfully');
+        res.status(200).json({ message: 'Shop status updated successfully' });
+    } catch (error) {
+        console.error('Error updating shop status:', error);
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        res.status(500).json({ 
+            error: 'Failed to update shop status', 
+            details: error instanceof Error ? error.message : String(error) 
+        });
+    }
 });
 
 // Add a more basic file upload endpoint with simpler configuration
@@ -1213,6 +1378,115 @@ app.post('/admin-auth', async (req: any, res: any) => {
             success: false,
             error: 'Authentication failed' 
         });
+    }
+});
+
+app.get('/orders-by-store/:storeNumber', async (req, res) => {
+    const { storeNumber } = req.params;
+    const storeNum = parseInt(storeNumber);
+    
+    try {
+        console.log(`Fetching orders for store ${storeNum}...`);
+        
+        let query = db.collection('orders').where('finished', '==', true);
+        
+        // If store number is 0, get all orders without store number (legacy data)
+        if (storeNum === 0) {
+            query = query.where('storeNumber', '==', 0);
+        } else {
+            query = query.where('storeNumber', '==', storeNum);
+        }
+        
+        const ordersSnapshot = await query.get();
+        console.log(`Found ${ordersSnapshot.docs.length} orders for store ${storeNum}`);
+        
+        const orders = ordersSnapshot.docs.map(doc => {
+            const data = doc.data();
+            console.log(`Order ${doc.id}: items count=${data.items?.length || 0}, totalAmount=${data.totalAmount}`);
+            return {
+                id: doc.id,
+                ...data
+            };
+        });
+        
+        res.status(200).json(orders);
+    } catch (error) {
+        console.error('Error fetching orders by store:', error);
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        res.status(500).json({ error: 'Failed to fetch orders by store', details: error instanceof Error ? error.message : String(error) });
+    }
+});
+
+app.get('/store-sessions', async (req, res) => {
+    try {
+        console.log('Fetching store sessions...');
+        
+        // First, get all store sessions
+        const sessionsSnapshot = await db.collection('store-sessions').get();
+        console.log(`Found ${sessionsSnapshot.docs.length} total store session documents`);
+        
+        // Log all document IDs for debugging
+        sessionsSnapshot.docs.forEach(doc => {
+            console.log(`Document ID: ${doc.id}, Data:`, doc.data());
+        });
+        
+        // Filter out the 'current' document and temporary sessions
+        const sessions = sessionsSnapshot.docs
+            .filter(doc => {
+                const data = doc.data();
+                const isValid = doc.id !== 'current' && 
+                               data.storeNumber > 0 && 
+                               data.isTemporary !== true;
+                console.log(`Document ${doc.id}: isValid=${isValid}, storeNumber=${data.storeNumber}, isTemporary=${data.isTemporary}`);
+                return isValid;
+            })
+            .map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data
+                };
+            })
+            .sort((a: any, b: any) => (b.storeNumber || 0) - (a.storeNumber || 0)); // Sort by store number descending
+        
+        console.log(`Returning ${sessions.length} valid store sessions:`, sessions);
+        res.status(200).json(sessions);
+    } catch (error) {
+        console.error('Error fetching store sessions:', error);
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        res.status(500).json({ error: 'Failed to fetch store sessions', details: error instanceof Error ? error.message : String(error) });
+    }
+});
+
+// Migration endpoint to update existing orders with store number 0
+app.post('/migrate-legacy-orders', async (req, res) => {
+    try {
+        // Get all orders that don't have a storeNumber field
+        const ordersSnapshot = await db.collection('orders').get();
+        let updatedCount = 0;
+        
+        const batch = db.batch();
+        
+        ordersSnapshot.docs.forEach(doc => {
+            const orderData = doc.data();
+            if (orderData.storeNumber === undefined) {
+                batch.update(doc.ref, { storeNumber: 0 });
+                updatedCount++;
+            }
+        });
+        
+        if (updatedCount > 0) {
+            await batch.commit();
+            console.log(`Updated ${updatedCount} legacy orders with store number 0`);
+        }
+        
+        res.status(200).json({ 
+            message: 'Migration completed successfully',
+            updatedCount 
+        });
+    } catch (error) {
+        console.error('Error migrating legacy orders:', error);
+        res.status(500).json({ error: 'Failed to migrate legacy orders' });
     }
 });
 

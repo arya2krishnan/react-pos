@@ -13,6 +13,7 @@ export interface OrderData {
     donated: boolean;
     amount?: number;
   };
+  storeNumber?: number; // Add store number field
 }
 
 export interface ItemData {
@@ -38,6 +39,17 @@ export interface ShopStatusResponse {
   isOpen: boolean;
 }
 
+export interface StoreSession {
+  id: string;
+  storeNumber: number;
+  startTime: string;
+  endTime?: string;
+  isActive: boolean;
+  orderCount: number;
+  totalRevenue: number;
+  isTemporary?: boolean;
+}
+
 const API_BASE_URL = 'https://api-2ya6yhttpq-uc.a.run.app';
 
 export const apiService = {
@@ -51,79 +63,64 @@ export const apiService = {
       console.log('Shop status response:', response);
       
       if (!response.ok) {
-        let errorText = '';
-        try {
-          errorText = await response.text();
-        } catch {
-          errorText = 'Could not get error text';
-        }
-        console.error('Server error response:', errorText);
+        const errorText = await response.text();
+        console.error('Shop status error response:', errorText);
         throw new Error(`Failed to fetch shop status: ${response.status} ${errorText}`);
       }
       
       const data = await response.json();
       console.log('Shop status raw data:', data);
       
-      // Ensure we have a boolean value for isOpen
-      const isOpen = !!data.isOpen;
+      const isOpen = data.isOpen === true;
       console.log('Shop is currently:', isOpen ? 'OPEN' : 'CLOSED');
       
       return {
         success: true,
-        data: {
-          isOpen
-        }
+        data: { isOpen }
       };
     } catch (error) {
-      console.error('API error:', error);
+      console.error('Error fetching shop status:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch shop status'
       };
     }
   },
-  
+
   /**
    * Toggle the shop's open/closed status
    */
   toggleShopStatus: async (isOpen: boolean): Promise<ApiResponse<ShopStatusResponse>> => {
     try {
       console.log(`Setting shop status to: ${isOpen ? 'open' : 'closed'}`);
-      const response = await fetch(`${API_BASE_URL}/open-shop`, {
+      const response = await fetch(`${API_BASE_URL}/toggle-shop-status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ isOpen }),
       });
+      
       console.log('Toggle shop status response:', response);
       
       if (!response.ok) {
-        let errorText = '';
-        try {
-          errorText = await response.text();
-        } catch {
-          errorText = 'Could not get error text';
-        }
-        console.error('Server error response:', errorText);
+        const errorText = await response.text();
+        console.error('Toggle shop status error response:', errorText);
         throw new Error(`Failed to toggle shop status: ${response.status} ${errorText}`);
       }
       
       const data = await response.json();
       console.log('Toggle shop status raw data:', data);
       
-      // Ensure we have a boolean value for isOpen
-      const newStatus = !!data.isOpen;
+      const newStatus = isOpen;
       console.log('Shop is now:', newStatus ? 'OPEN' : 'CLOSED');
       
       return {
         success: true,
-        data: {
-          isOpen: newStatus
-        }
+        data: { isOpen: newStatus }
       };
     } catch (error) {
-      console.error('API error:', error);
+      console.error('Error toggling shop status:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to toggle shop status'
@@ -861,6 +858,60 @@ export const apiService = {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Authentication failed'
+      };
+    }
+  },
+
+  /**
+   * Get all store sessions
+   */
+  getStoreSessions: async (): Promise<ApiResponse<StoreSession[]>> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/store-sessions`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch store sessions: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error fetching store sessions:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch store sessions'
+      };
+    }
+  },
+
+  /**
+   * Get orders for a specific store session
+   */
+  getOrdersByStore: async (storeNumber: number): Promise<ApiResponse<OrderData[]>> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders-by-store/${storeNumber}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch orders for store ${storeNumber}: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error fetching orders by store:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch orders by store'
       };
     }
   }

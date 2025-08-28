@@ -10,9 +10,12 @@ import {
   TabList,
   Tab,
   CircularProgress,
-  Alert
+  Alert,
+  Card,
+  CardContent,
+  Grid
 } from '@mui/joy';
-import { apiService, OrderData, ItemData } from '../services/api';
+import { apiService, OrderData, ItemData, StoreSession } from '../services/api';
 import NavigationBar from '../components/common/NavigationBar';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
@@ -22,9 +25,20 @@ interface ItemStats {
   category: string;
 }
 
+interface StorePerformance {
+  storeNumber: number;
+  startTime: string;
+  endTime?: string;
+  orderCount: number;
+  totalRevenue: number;
+  itemStats: ItemStats[];
+}
+
 export default function DashboardPage() {
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [currentItems, setCurrentItems] = useState<ItemData[]>([]);
+  const [storeSessions, setStoreSessions] = useState<StoreSession[]>([]);
+  const [storePerformance, setStorePerformance] = useState<StorePerformance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -39,10 +53,11 @@ export default function DashboardPage() {
     setError(null);
     
     try {
-      // Fetch both completed orders and current items
-      const [ordersResponse, itemsResponse] = await Promise.all([
+      // Fetch all data in parallel
+      const [ordersResponse, itemsResponse, sessionsResponse] = await Promise.all([
         apiService.getCompletedOrders(),
-        apiService.getItems()
+        apiService.getItems(),
+        apiService.getStoreSessions()
       ]);
       
       if (ordersResponse.success && ordersResponse.data) {
@@ -56,6 +71,50 @@ export default function DashboardPage() {
         setCurrentItems(itemsResponse.data);
       } else {
         setError(itemsResponse.error || 'Failed to fetch current items');
+        return;
+      }
+
+      if (sessionsResponse.success && sessionsResponse.data) {
+        setStoreSessions(sessionsResponse.data);
+        
+        // Fetch performance data for each store session
+        const performanceData: StorePerformance[] = [];
+        
+        // Add store 0 (legacy data) if there are orders without store numbers
+        const legacyOrders = ordersResponse.data.filter(order => !order.storeNumber || order.storeNumber === 0);
+        if (legacyOrders.length > 0) {
+          const legacyStats = aggregateItemStats(legacyOrders, itemsResponse.data);
+          performanceData.push({
+            storeNumber: 0,
+            startTime: 'Legacy Data',
+            orderCount: legacyOrders.length,
+            totalRevenue: legacyOrders.reduce((sum, order) => sum + order.totalAmount, 0),
+            itemStats: legacyStats
+          });
+        }
+        
+        // Fetch data for each store session
+        for (const session of sessionsResponse.data) {
+          const storeOrdersResponse = await apiService.getOrdersByStore(session.storeNumber);
+          if (storeOrdersResponse.success && storeOrdersResponse.data) {
+            const storeStats = aggregateItemStats(storeOrdersResponse.data, itemsResponse.data);
+            performanceData.push({
+              storeNumber: session.storeNumber,
+              startTime: session.startTime,
+              endTime: session.endTime,
+              orderCount: session.orderCount,
+              totalRevenue: session.totalRevenue,
+              itemStats: storeStats
+            });
+          }
+        }
+        
+        // Sort performance data by store number (ascending order)
+        performanceData.sort((a, b) => a.storeNumber - b.storeNumber);
+        
+        setStorePerformance(performanceData);
+      } else {
+        setError(sessionsResponse.error || 'Failed to fetch store sessions');
         return;
       }
     } catch (error) {
@@ -114,6 +173,19 @@ export default function DashboardPage() {
   const liveItemsStats = aggregateItemStats(orders, currentItems, 'live');
   const archivedItemsStats = aggregateItemStats(orders, currentItems, 'o');
 
+  const formatDateTime = (dateString: string) => {
+    if (dateString === 'Legacy Data') return dateString;
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
   if (isLoading) {
     return (
       <>
@@ -157,11 +229,10 @@ export default function DashboardPage() {
             startDecorator={<ArrowBackIcon />}
             sx={{ mr: 3 }}
             variant="outlined"
-            size="sm"
           >
             Back to Admin
           </Button>
-          <Typography level="h1" sx={{ fontWeight: 'bold' }}>
+          <Typography level="h1" sx={{ fontWeight: '700' }}>
             Sales Dashboard
           </Typography>
         </Box>
@@ -180,74 +251,198 @@ export default function DashboardPage() {
               sx={{ mb: 4 }}
             >
               <TabList>
-                <Tab>Live Items ({liveItemsStats.length})</Tab>
-                <Tab>Archived Items ({archivedItemsStats.length})</Tab>
+                <Tab>All Time Performance</Tab>
+                {storePerformance.map((store, index) => (
+                  <Tab key={store.storeNumber}>
+                    Store {store.storeNumber} ({store.orderCount} orders)
+                  </Tab>
+                ))}
               </TabList>
             </Tabs>
 
-            {/* Live Items Tab */}
+            {/* All Time Performance Tab */}
             {activeTab === 0 && (
               <Box>
                 <Typography level="h2" sx={{ mb: 4, fontWeight: '600' }}>
-                  Live Items Performance
+                  All Time Performance
                 </Typography>
                 
-                {liveItemsStats.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 8 }}>
-                    <Typography level="body-lg" color="neutral">
-                      No live items have been sold yet.
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Sheet variant="soft" color="primary" sx={{ borderRadius: 'lg', overflow: 'hidden' }}>
-                    <Table aria-label="live items table" color="primary" sx={{ '& th, & td': { padding: '16px 24px' } }}>
-                      <thead>
-                        <tr>
-                          <th style={{ fontWeight: '600', fontSize: '1rem' }}>Item Name</th>
-                          <th style={{ textAlign: 'right', fontWeight: '600', fontSize: '1rem' }}>Quantity Sold</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {liveItemsStats.map((item: ItemStats) => (
-                          <tr key={item.name}>
-                            <td style={{ fontWeight: '500' }}>{item.name}</td>
-                            <td style={{ textAlign: 'right', fontWeight: '600' }}>{item.quantity}</td>
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                  <Grid xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography level="h4" color="primary">
+                          Total Orders
+                        </Typography>
+                        <Typography level="h2" sx={{ fontWeight: 'bold' }}>
+                          {orders.length}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid xs={12} md={6}>
+                    <Card>
+                      <CardContent>
+                        <Typography level="h4" color="primary">
+                          Total Revenue
+                        </Typography>
+                        <Typography level="h2" sx={{ fontWeight: 'bold' }}>
+                          {formatCurrency(orders.reduce((sum, order) => sum + order.totalAmount, 0))}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+
+                <Tabs value={0} sx={{ mb: 3 }}>
+                  <TabList>
+                    <Tab>Live Items ({liveItemsStats.length})</Tab>
+                    <Tab>Archived Items ({archivedItemsStats.length})</Tab>
+                  </TabList>
+                </Tabs>
+
+                {/* Live Items */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography level="h3" sx={{ mb: 2, fontWeight: '600' }}>
+                    Live Items Performance
+                  </Typography>
+                  
+                  {liveItemsStats.length === 0 ? (
+                    <Alert color="neutral">No live items have been sold yet.</Alert>
+                  ) : (
+                    <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
+                      <Table>
+                        <thead>
+                          <tr>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Quantity Sold</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </Sheet>
-                )}
+                        </thead>
+                        <tbody>
+                          {liveItemsStats.map((item) => (
+                            <tr key={item.name}>
+                              <td>{item.name}</td>
+                              <td>{item.category}</td>
+                              <td>{item.quantity}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </Sheet>
+                  )}
+                </Box>
+
+                {/* Archived Items */}
+                <Box>
+                  <Typography level="h3" sx={{ mb: 2, fontWeight: '600' }}>
+                    Archived Items Performance
+                  </Typography>
+                  
+                  {archivedItemsStats.length === 0 ? (
+                    <Alert color="neutral">No archived items have been sold yet.</Alert>
+                  ) : (
+                    <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
+                      <Table>
+                        <thead>
+                          <tr>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Quantity Sold</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {archivedItemsStats.map((item) => (
+                            <tr key={item.name}>
+                              <td>{item.name}</td>
+                              <td>{item.category}</td>
+                              <td>{item.quantity}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </Sheet>
+                  )}
+                </Box>
               </Box>
             )}
 
-            {/* Archived Items Tab */}
-            {activeTab === 1 && (
+            {/* Store Session Performance Tabs */}
+            {activeTab > 0 && storePerformance[activeTab - 1] && (
               <Box>
                 <Typography level="h2" sx={{ mb: 4, fontWeight: '600' }}>
-                  Archived Items Performance
+                  Store {storePerformance[activeTab - 1].storeNumber} Performance
                 </Typography>
                 
-                {archivedItemsStats.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 8 }}>
-                    <Typography level="body-lg" color="neutral">
-                      No archived items have been sold yet.
-                    </Typography>
-                  </Box>
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                  <Grid xs={12} md={4}>
+                    <Card>
+                      <CardContent>
+                        <Typography level="h4" color="primary">
+                          Session Orders
+                        </Typography>
+                        <Typography level="h2" sx={{ fontWeight: 'bold' }}>
+                          {storePerformance[activeTab - 1].orderCount}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid xs={12} md={4}>
+                    <Card>
+                      <CardContent>
+                        <Typography level="h4" color="primary">
+                          Session Revenue
+                        </Typography>
+                        <Typography level="h2" sx={{ fontWeight: 'bold' }}>
+                          {formatCurrency(storePerformance[activeTab - 1].totalRevenue)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid xs={12} md={4}>
+                    <Card>
+                      <CardContent>
+                        <Typography level="h4" color="primary">
+                          Session Duration
+                        </Typography>
+                        <Typography level="h2" sx={{ fontWeight: 'bold' }}>
+                          {storePerformance[activeTab - 1].startTime === 'Legacy Data' ? 
+                            'Legacy Data' : 
+                            formatDateTime(storePerformance[activeTab - 1].startTime)
+                          }
+                        </Typography>
+                        {storePerformance[activeTab - 1].endTime && (
+                          <Typography level="body-sm" color="neutral">
+                            to {formatDateTime(storePerformance[activeTab - 1].endTime!)}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+
+                <Typography level="h3" sx={{ mb: 2, fontWeight: '600' }}>
+                  Items Performance
+                </Typography>
+                
+                {storePerformance[activeTab - 1].itemStats.length === 0 ? (
+                  <Alert color="neutral">No items were sold in this store session.</Alert>
                 ) : (
-                  <Sheet variant="soft" color="primary" sx={{ borderRadius: 'lg', overflow: 'hidden' }}>
-                    <Table aria-label="archived items table" color="primary" sx={{ '& th, & td': { padding: '16px 24px' } }}>
+                  <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
+                    <Table>
                       <thead>
                         <tr>
-                          <th style={{ fontWeight: '600', fontSize: '1rem' }}>Item Name</th>
-                          <th style={{ textAlign: 'right', fontWeight: '600', fontSize: '1rem' }}>Quantity Sold</th>
+                          <th>Item Name</th>
+                          <th>Category</th>
+                          <th>Quantity Sold</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {archivedItemsStats.map((item: ItemStats) => (
+                        {storePerformance[activeTab - 1].itemStats.map((item) => (
                           <tr key={item.name}>
-                            <td style={{ fontWeight: '500' }}>{item.name}</td>
-                            <td style={{ textAlign: 'right', fontWeight: '600' }}>{item.quantity}</td>
+                            <td>{item.name}</td>
+                            <td>{item.category}</td>
+                            <td>{item.quantity}</td>
                           </tr>
                         ))}
                       </tbody>
