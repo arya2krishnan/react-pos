@@ -210,7 +210,7 @@ app.post('/finish-order', async (req, res) => {
         if (sendMessage && customerPhone) {
             try {
                 console.log('Attempting to send text message to:', customerPhone);
-                const textResult = await sendText(customerPhone, `CAFE GOUGH: \nHello ${customerName}! Your order ${orderNumber} is ready!\nHead to the counter to pick it up!`);
+                const textResult = await sendText(customerPhone, `CAFE GOUGH: \nHello ${customerName}! Your order ${orderNumber} is ready!\nHead to the counter to pick it up!\n\nWishing you a happy Diwali from us at CAFE GOUGH 🪔🪔🪔`);
                 
                 if (textResult.success) {
                     res.status(200).json({ message: 'Order finished successfully' });
