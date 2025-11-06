@@ -270,7 +270,7 @@ export default function POSPage() {
           }}>
             {/* Logo */}
             <img 
-              src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSummer.png?alt=media&token=59189f18-52d0-48c6-a9f6-3dd19622ff35"
+              src="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2Fv4.png?alt=media&token=cbd71b5d-399a-4802-8850-e9dfd3019026"
               alt="Cafe Gough Logo"
               style={{ 
                 width: '80px', 
@@ -328,7 +328,7 @@ export default function POSPage() {
             <Box sx={{ position: 'fixed', top: 64, right: 16 }}>
               <CartButton 
                 shopName="Cafe Gough"
-                shopUrl="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2FCafeGoughSummer.png?alt=media&token=59189f18-52d0-48c6-a9f6-3dd19622ff35"
+                shopUrl="https://firebasestorage.googleapis.com/v0/b/cafe-pos-gough.firebasestorage.app/o/site-image%2Fv4.png?alt=media&token=cbd71b5d-399a-4802-8850-e9dfd3019026"
                 items={checkoutItems}
                 onClick={handleCheckout}
                 onRemove={removeItem}
