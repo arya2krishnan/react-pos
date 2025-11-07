@@ -2,7 +2,7 @@ import { Typography, Alert, CircularProgress, Box } from '@mui/joy';
 import ItemGrid from '../components/Items/ItemGrid';
 import CartButton from '../components/receipt/CartButton';
 import { useCartStore } from '../store/cartStore';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import UserInput from '../components/UserComponent/UserInput';
 import OrderNumber from '../components/UserComponent/OrderNumber';
 import DonationPrompt from '../components/UserComponent/DonationPrompt';
@@ -10,6 +10,8 @@ import { apiService, OrderData, ItemData } from '../services/api';
 import StoreStatusIndicator from '../components/common/StoreStatusIndicator';
 import NavigationBar from '../components/common/NavigationBar';
 import { DonationButton } from '../components/donations';
+import { Fireworks } from '@fireworks-js/react';
+import type { FireworksHandlers } from '@fireworks-js/react';
 
 export default function POSPage() {
   const cartItems = useCartStore((state) => state.items);
@@ -39,6 +41,10 @@ export default function POSPage() {
   // State for loading and errors
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // State for fireworks animation
+  const [showFireworks, setShowFireworks] = useState(false);
+  const fireworksRef = useRef<FireworksHandlers>(null);
 
   // Create checkout items for the cart
   const checkoutItems = cartItems.map((cartItem, index) => ({
@@ -159,6 +165,24 @@ export default function POSPage() {
     await processOrder(userName, userPhone, textOptIn);
   };
 
+  // Launch 5 fireworks and auto-hide after 4 seconds
+  useEffect(() => {
+    if (showFireworks && fireworksRef.current) {
+      // Launch exactly 5 fireworks
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          fireworksRef.current?.launch(1);
+        }, i * 200); // Stagger them slightly (200ms apart)
+      }
+      
+      // Hide fireworks after 4 seconds
+      const timer = setTimeout(() => {
+        setShowFireworks(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showFireworks]);
+
   const processOrder = async (customerName = userName, customerPhone = userPhone, textOptInValue = textOptIn) => {
     setIsLoading(true);
     setErrorMessage('');
@@ -212,6 +236,9 @@ export default function POSPage() {
       const response = await apiService.submitOrder(orderData);
       
       if (response.success) {
+        // Trigger firework animation
+        setShowFireworks(true);
+        
         // First show the order number - this needs the name to be available
         setIsOrderNumberOpen(true);
         
@@ -365,6 +392,39 @@ export default function POSPage() {
       
       {/* Donation Button - only visible on POS page */}
       <DonationButton />
+      
+      {/* Fireworks animation */}
+      {showFireworks && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 9999,
+            pointerEvents: 'none',
+          }}
+        >
+          <Fireworks
+            ref={fireworksRef}
+            options={{
+              rocketsPoint: {
+                min: 0,
+                max: 100,
+              },
+            }}
+            style={{
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              position: 'fixed',
+              background: 'transparent',
+            }}
+          />
+        </Box>
+      )}
     </>
   );
 } 
